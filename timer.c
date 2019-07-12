@@ -23,10 +23,15 @@
 #include "stm32f4xx_conf.h"
 
 // Settings
-#define TIMER_HZ					1e7
+#define TIMER_HZ					1e7 //10mhz
+#define FAST_TIMER_HW     TIM5
+#define FAST_TIMER_Periph RCC_APB1Periph_TIM5
+
+// todo, move function timers to a 16 bit timer (free up timer 5)
+// move tachometer/rpm timer use to systick clock if accurate enough.
 
 void timer_init(void) {
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
+	RCC_APB1PeriphClockCmd(FAST_TIMER_Periph, ENABLE);
 	uint16_t PrescalerValue = (uint16_t) ((SYSTEM_CORE_CLOCK / 2) / TIMER_HZ) - 1;
 
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
@@ -34,18 +39,18 @@ void timer_init(void) {
 	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
 	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInit(TIM5, &TIM_TimeBaseStructure);
+	TIM_TimeBaseInit(FAST_TIMER_HW, &TIM_TimeBaseStructure);
 
-	TIM5->CNT = 0;
-	TIM_Cmd(TIM5, ENABLE);
+	FAST_TIMER_HW->CNT = 0;
+	TIM_Cmd(FAST_TIMER_HW, ENABLE);
 }
 
 uint32_t timer_time_now(void) {
-	return TIM5->CNT;
+	return FAST_TIMER_HW->CNT;
 }
 
 float timer_seconds_elapsed_since(uint32_t time) {
-	uint32_t diff = TIM5->CNT - time;
+	uint32_t diff = FAST_TIMER_HW->CNT - time;
 	return (float)diff / (float)TIMER_HZ;
 }
 
@@ -56,7 +61,7 @@ float timer_seconds_elapsed_since(uint32_t time) {
  * Seconds to sleep.
  */
 void timer_sleep(float seconds) {
-	uint32_t start_t = TIM5->CNT;
+	uint32_t start_t = FAST_TIMER_HW->CNT;
 
 	for (;;) {
 		if (timer_seconds_elapsed_since(start_t) >= seconds) {
