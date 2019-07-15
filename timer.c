@@ -29,6 +29,7 @@
 
 // todo, move function timers to a 16 bit timer (free up timer 5)
 // move tachometer/rpm timer use to systick clock if accurate enough.
+// at 10mhz 16 bit timer is ~6ms. 32bit is 429sec
 
 void timer_init(void) {
 	RCC_APB1PeriphClockCmd(FAST_TIMER_Periph, ENABLE);
