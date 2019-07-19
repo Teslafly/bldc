@@ -159,31 +159,36 @@
 #define HW_ICU_PIN				6
 
 // adc app pins (7 gpio?)
-//#define adc_Ain1_name adc1 // future also define analog in pins too.
-#define adc_Dinrx_name TX // special treatment of rx/tx pins to not clobber uart app
-#define adc_Din1_GPIO HW_UART_RX_PORT
-#define adc_Din1_PIN HW_UART_RX_PIN
-#define adc_Dinrx_name RX
-#define adc_Din1_GPIO HW_UART_RX_PORT
-#define adc_Din1_PIN HW_UART_RX_PIN
+// todo, capitalise all these defines and change "adc" to analogapp or such
 
-#define adc_Din1_name Servo 
-#define adc_Din1_GPIO HW_ICU_GPIO	
-#define adc_Din1_PIN HW_ICU_PIN
+// maybe make this a whole datastructure instead of defines. 
+    // then pass the configured pin/port for each function to adc app for it to configure/use
+    // adc app will need to check if valid pin, then if it's used by somthing else (uart) to prevent clobbering. 
+// #define adc_Ain1_name adc1 // future also define analog in pins too.
+#define adc_Din_tX_name TX // special treatment of rx/tx pins to not clobber uart app
+#define adc_Din_tx_GPIO HW_UART_RX_PORT
+#define adc_Din_tx_PIN  HW_UART_RX_PIN
+#define adc_Din_rx_name RX
+#define adc_Din_rx_GPIO HW_UART_RX_PORT
+#define adc_Din_rx_PIN  HW_UART_RX_PIN
 
-#define adc_Din2_name swdio // text of pin label on vesc board
-#define adc_Din2_GPIO GPIOA
-#define adc_Din2_PIN 13
-#define adc_Din3_name swclk
-#define adc_Din3_GPIO GPIOA
-#define adc_Din3_PIN 14
+#define adc_Din1_name   Servo 
+#define adc_Din1_GPIO   HW_ICU_GPIO	
+#define adc_Din1_PIN    HW_ICU_PIN
 
-// #define adc_Din3_name Brake
-// #define adc_Din3_GPIO GPIOA
-// #define adc_Din3_PIN 14
-// #define adc_Din3_name Reverse
-// #define adc_Din3_GPIO GPIOA
-// #define adc_Din3_PIN 14
+#define adc_Din2_name   swdio // text of pin label on vesc board
+#define adc_Din2_GPIO   GPIOA
+#define adc_Din2_PIN    13
+#define adc_Din3_name   swclk
+#define adc_Din3_GPIO   GPIOA
+#define adc_Din3_PIN    14
+
+// #define adc_Din3_name    Brake
+// #define adc_Din3_GPIO    GPIOA
+// #define adc_Din3_PIN     14
+// #define adc_Din3_name    Reverse
+// #define adc_Din3_GPIO    GPIOA
+// #define adc_Din3_PIN     14
 
 // I2C Peripheral
 #define HW_I2C_DEV				I2CD2
