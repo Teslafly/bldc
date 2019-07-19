@@ -165,21 +165,21 @@
     // then pass the configured pin/port for each function to adc app for it to configure/use
     // adc app will need to check if valid pin, then if it's used by somthing else (uart) to prevent clobbering. 
 // #define adc_Ain1_name adc1 // future also define analog in pins too.
-#define adc_Din_tX_name TX // special treatment of rx/tx pins to not clobber uart app
+#define adc_Din_tX_name TX, 254 // special treatment of rx/tx pins to not clobber uart app
 #define adc_Din_tx_GPIO HW_UART_RX_PORT
 #define adc_Din_tx_PIN  HW_UART_RX_PIN
-#define adc_Din_rx_name RX
+#define adc_Din_rx_name RX, 255
 #define adc_Din_rx_GPIO HW_UART_RX_PORT
 #define adc_Din_rx_PIN  HW_UART_RX_PIN
 
-#define adc_Din1_name   Servo 
+#define adc_Din1_name   Servo, 1 // pin name, pin #
 #define adc_Din1_GPIO   HW_ICU_GPIO	
 #define adc_Din1_PIN    HW_ICU_PIN
 
-#define adc_Din2_name   swdio // text of pin label on vesc board
+#define adc_Din2_name   swdio, 2 // text of pin label on vesc board
 #define adc_Din2_GPIO   GPIOA
 #define adc_Din2_PIN    13
-#define adc_Din3_name   swclk
+#define adc_Din3_name   swclk, 3
 #define adc_Din3_GPIO   GPIOA
 #define adc_Din3_PIN    14
 

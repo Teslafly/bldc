@@ -11,5 +11,6 @@ Changes / features I want to implement.
         - have "invert pin" toggle to invert behavior
         - allow user to define pullup / pulldown
         - add pulldown mode to adc throttle (and brake?) pins for safety if disconnected
+    - trim unneeded modes and add better description of mode function.
 
 - for custom app. define varialbe names, and min/max to send to vesc tool and create config boxes in a row. makes for extensible configuration of custom apps or variables.
