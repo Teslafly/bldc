@@ -415,7 +415,8 @@ void encoder_tim_isr(void) {
 	uint16_t pos;
 
 	if(mode == ENCODER_MODE_AS5047P_SPI) {
-		spi_begin();
+		spi_begin();  // CHECK IF VIOLATING AS5047 350NS SETUP TIME CROM CS HIGH TO FIRST CLOCK
+		spi_delay(); // IS THIS NEEDED? VERIFY WITH SCOPE. 168MHZ = ~6NS INSTRUCTION
 		spi_transfer(&pos, 0, 1);
 		spi_end();
 
@@ -437,7 +438,6 @@ void encoder_tim_isr(void) {
 #endif
 
 		spi_begin(); // CS uses the same mcu pin as AS5047
-
 		spi_transfer(&pos, 0, 1);
 		spi_end();
 
@@ -491,8 +491,11 @@ static void spi_transfer(uint16_t *in_buf, const uint16_t *out_buf, int length) 
 			send <<= 1;
 
 			spi_delay();
-			palSetPad(SPI_SW_SCK_GPIO, SPI_SW_SCK_PIN);
+			palSetPad(SPI_SW_SCK_GPIO, SPI_SW_SCK_PIN); // RISING CLOCK
 			spi_delay();
+			spi_delay();
+			palClearPad(SPI_SW_SCK_GPIO, SPI_SW_SCK_PIN); // FALLING CLOCK
+			spi_delay(); // READ AFTER FALLING CLOCK
 
 			int r1, r2, r3;
 			r1 = palReadPad(SPI_SW_MISO_GPIO, SPI_SW_MISO_PIN);
@@ -505,9 +508,7 @@ static void spi_transfer(uint16_t *in_buf, const uint16_t *out_buf, int length) 
 			if (utils_middle_of_3_int(r1, r2, r3)) {
 				recieve |= 1;
 			}
-
-			palClearPad(SPI_SW_SCK_GPIO, SPI_SW_SCK_PIN);
-			spi_delay();
+			
 		}
 
 		if (in_buf) {
