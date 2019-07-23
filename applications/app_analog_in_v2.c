@@ -84,6 +84,16 @@ float app_adc_get_voltage2(void) {
 	return read_voltage2;
 }
 
+void setup_button(int io_num) {
+	// Set servo pin as an input with pullup
+	if (use_rx_tx_as_buttons) {
+		palSetPadMode(HW_UART_TX_PORT, HW_UART_TX_PIN, PAL_MODE_INPUT_PULLUP);
+		palSetPadMode(HW_UART_RX_PORT, HW_UART_RX_PIN, PAL_MODE_INPUT_PULLUP);
+	} else {
+		palSetPadMode(APP_DIN1_GPIO, APP_DIN1_PIN , PAL_MODE_INPUT_PULLUP); // servo 4 now
+	}
+}
+
 bool read_button(int io_num, bool inverted) {
 	// Read the button pins
 	bool button_val = false;
@@ -117,12 +127,22 @@ static THD_FUNCTION(adc_thread, arg) {
 
 	chRegSetThreadName("APP_ADC");
 
+	// not tested
+	// set adc inputs to pulldown mode. since the analog mux is seperate from the pins
+	// this doesn't clobber analog mode. in fact all analog mode seems to do is tristate the pins?
+	palSetPadMode(APP_AIN1_GPIO, APP_AIN1_PIN, PAL_MODE_INPUT_PULLDOWN);
+	palSetPadMode(APP_AIN2_GPIO, APP_AIN2_PIN, PAL_MODE_INPUT_PULLDOWN);
+
+	// todo, after closing analog app, need to put back to pure analog mode
+	// palSetPadMode(GPIOA, 6, PAL_MODE_INPUT_ANALOG);
+
+
 	// Set servo pin as an input with pullup
 	if (use_rx_tx_as_buttons) {
 		palSetPadMode(HW_UART_TX_PORT, HW_UART_TX_PIN, PAL_MODE_INPUT_PULLUP);
 		palSetPadMode(HW_UART_RX_PORT, HW_UART_RX_PIN, PAL_MODE_INPUT_PULLUP);
 	} else {
-		palSetPadMode(adc_Din1_GPIO, adc_Din1_PIN, PAL_MODE_INPUT_PULLUP); // servo 4 now
+		palSetPadMode(APP_DIN1_GPIO, APP_DIN1_PIN , PAL_MODE_INPUT_PULLUP); // servo 4 now
 	}
 
 	is_running = true;

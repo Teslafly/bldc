@@ -164,31 +164,39 @@
 // maybe make this a whole datastructure instead of defines. 
     // then pass the configured pin/port for each function to adc app for it to configure/use
     // adc app will need to check if valid pin, then if it's used by somthing else (uart) to prevent clobbering. 
-// #define adc_Ain1_name adc1 // future also define analog in pins too.
-#define adc_Din_tX_name TX, 254 // special treatment of rx/tx pins to not clobber uart app
-#define adc_Din_tx_GPIO HW_UART_RX_PORT
-#define adc_Din_tx_PIN  HW_UART_RX_PIN
-#define adc_Din_rx_name RX, 255
-#define adc_Din_rx_GPIO HW_UART_RX_PORT
-#define adc_Din_rx_PIN  HW_UART_RX_PIN
+// analog  pin mainly configured by mux vector, but port/pin required 
+// to enable special features for apps (pulldown, etc) or digital modes.
+#define APP_AIN1_NAME adc1 // ADC_IND_EXT1 5
+#define APP_AIN1_GPIO GPIOA
+#define APP_AIN1_PIN  5
+#define APP_AIN2_NAME adc2 // ADC_IND_EXT2 6
+#define APP_AIN2_GPIO GPIOA
+#define APP_AIN2_PIN  6
 
-#define adc_Din1_name   Servo, 1 // pin name, pin #
-#define adc_Din1_GPIO   HW_ICU_GPIO	
-#define adc_Din1_PIN    HW_ICU_PIN
+#define APP_DIN_TX_NAME TX, 254 // special treatment of rx/tx pins to not clobber uart app
+#define APP_DIN_TX_GPIO HW_UART_RX_PORT
+#define APP_DIN_TX_PIN  HW_UART_RX_PIN
+#define APP_DIN_RX_NAME RX, 255
+#define APP_DIN_RX_GPIO HW_UART_RX_PORT
+#define APP_DIN_RX_PIN  HW_UART_RX_PIN
 
-#define adc_Din2_name   swdio, 2 // text of pin label on vesc board
-#define adc_Din2_GPIO   GPIOA
-#define adc_Din2_PIN    13
-#define adc_Din3_name   swclk, 3
-#define adc_Din3_GPIO   GPIOA
-#define adc_Din3_PIN    14
+#define APP_DIN1_NAME   Servo, 1 // pin name, pin #
+#define APP_DIN1_GPIO   HW_ICU_GPIO	
+#define APP_DIN1_PIN    HW_ICU_PIN
 
-// #define adc_Din3_name    Brake
-// #define adc_Din3_GPIO    GPIOA
-// #define adc_Din3_PIN     14
-// #define adc_Din3_name    Reverse
-// #define adc_Din3_GPIO    GPIOA
-// #define adc_Din3_PIN     14
+#define APP_DIN2_NAME   swdio, 2 // text of pin label on vesc board
+#define APP_DIN2_GPIO   GPIOA
+#define APP_DIN2_PIN    13
+#define APP_DIN3_NAME   swclk, 3
+#define APP_DIN3_GPIO   GPIOA
+#define APP_DIN3_PIN    14
+
+// #define APP_DIN3_NAME    Brake
+// #define APP_DIN3_GPIO    GPIOA
+// #define APP_DIN3_PIN     14
+// #define APP_DIN3_NAME    Reverse
+// #define APP_DIN3_GPIO    GPIOA
+// #define APP_DIN3_PIN     14
 
 // I2C Peripheral
 #define HW_I2C_DEV				I2CD2
