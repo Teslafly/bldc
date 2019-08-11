@@ -121,6 +121,55 @@ bool read_button(int io_num, bool inverted) {
 	return button_val;
 }
 
+void set_pin_pupdr(ioportid_t port, int pin, bool pullup, bool pulldown){
+	ioportmask_t port_bit_mask=((ioportmask_t)(1U << (pin))
+	// sets the pupdr mode for a pin. may allow pullup/down on analog pin.
+	// even though reference manual says that function is reserved. would take extra logic to disable so i bet they havent
+	// mode for analog = b11, mode for pullup = 01, pulldown = 10, both = 11?
+
+
+	//palSetGroupMode(port, mask, offset, mode)
+	// _pal_lld_setgroupmode(port, mask << offset, mode)
+
+// 	_pal_lld_setgroupmode( ioportid_t port,
+//                            ioportmask_t mask,
+//                            iomode_t mode) {
+
+//   uint32_t moder   = (mode & PAL_STM32_MODE_MASK) >> 0;
+//   uint32_t otyper  = (mode & PAL_STM32_OTYPE_MASK) >> 2;
+//   uint32_t ospeedr = (mode & PAL_STM32_OSPEED_MASK) >> 3;
+//   uint32_t pupdr   = (mode & PAL_STM32_PUDR_MASK) >> 5;
+//   uint32_t altr    = (mode & PAL_STM32_ALTERNATE_MASK) >> 7;
+//   uint32_t bit     = 0;
+//   while (TRUE) {
+//     if ((mask & 1) != 0) {
+//       uint32_t altrmask, m1, m2, m4;
+
+//       altrmask = altr << ((bit & 7) * 4);
+//       m4 = 15 << ((bit & 7) * 4);
+//       if (bit < 8)
+//         port->AFRL = (port->AFRL & ~m4) | altrmask;
+//       else
+//         port->AFRH = (port->AFRH & ~m4) | altrmask;
+//       m1 = 1 << bit;
+//       port->OTYPER  = (port->OTYPER & ~m1) | otyper;
+//       m2 = 3 << (bit * 2);
+//       port->OSPEEDR = (port->OSPEEDR & ~m2) | ospeedr;
+//       port->PUPDR   = (port->PUPDR & ~m2) | pupdr;
+//       port->MODER   = (port->MODER & ~m2) | moder;
+//     }
+//     mask >>= 1;
+//     if (!mask)
+//       return;
+//     otyper <<= 1;
+//     ospeedr <<= 2;
+//     pupdr <<= 2;
+//     moder <<= 2;
+//     bit++;
+//   }
+// }
+
+}
 
 static THD_FUNCTION(adc_thread, arg) {
 	(void)arg;
@@ -130,8 +179,13 @@ static THD_FUNCTION(adc_thread, arg) {
 	// not tested
 	// set adc inputs to pulldown mode. since the analog mux is seperate from the pins
 	// this doesn't clobber analog mode. in fact all analog mode seems to do is tristate the pins?
-	palSetPadMode(APP_AIN1_GPIO, APP_AIN1_PIN, PAL_MODE_INPUT_PULLDOWN);
-	palSetPadMode(APP_AIN2_GPIO, APP_AIN2_PIN, PAL_MODE_INPUT_PULLDOWN);
+	// these dont seem to work. does chibios force to analog mode?
+	//palSetPadMode(APP_AIN1_GPIO, APP_AIN1_PIN, PAL_MODE_INPUT_PULLDOWN);
+	//palSetPadMode(APP_AIN2_GPIO, APP_AIN2_PIN, PAL_MODE_INPUT_PULLDOWN);
+	
+	//pupdr register is available for all functions, though the pullup/down functions are reserved in analog mode. 
+	// i would be suprised if they didnt work if you set them anyways.
+
 
 	// todo, after closing analog app, need to put back to pure analog mode
 	// palSetPadMode(GPIOA, 6, PAL_MODE_INPUT_ANALOG);
