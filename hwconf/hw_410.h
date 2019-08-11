@@ -124,6 +124,34 @@
 #define HW_ICU_GPIO				GPIOB
 #define HW_ICU_PIN				5
 
+
+// adc app pins (7 gpio?)
+// todo, capitalise all these defines and change "adc" to analogapp or such
+
+// maybe make this a whole datastructure instead of defines. 
+    // then pass the configured pin/port for each function to adc app for it to configure/use
+    // adc app will need to check if valid pin, then if it's used by somthing else (uart) to prevent clobbering. 
+// analog  pin mainly configured by mux vector, but port/pin required 
+// to enable special features for apps (pulldown, etc) or digital modes.
+#define APP_AIN1_NAME adc1 // ADC_IND_EXT1 5
+#define APP_AIN1_GPIO GPIOA
+#define APP_AIN1_PIN  5
+#define APP_AIN2_NAME adc2 // ADC_IND_EXT2 6
+#define APP_AIN2_GPIO GPIOA
+#define APP_AIN2_PIN  6
+
+#define APP_DIN_TX_NAME TX, 254 // special treatment of rx/tx pins to not clobber uart app
+#define APP_DIN_TX_GPIO HW_UART_RX_PORT
+#define APP_DIN_TX_PIN  HW_UART_RX_PIN
+#define APP_DIN_RX_NAME RX, 255
+#define APP_DIN_RX_GPIO HW_UART_RX_PORT
+#define APP_DIN_RX_PIN  HW_UART_RX_PIN
+
+#define APP_DIN1_NAME   Servo, 1 // pin name, pin #
+#define APP_DIN1_GPIO   HW_ICU_GPIO	
+#define APP_DIN1_PIN    HW_ICU_PIN
+
+
 // I2C Peripheral
 #define HW_I2C_DEV				I2CD2
 #define HW_I2C_GPIO_AF			GPIO_AF_I2C2

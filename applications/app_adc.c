@@ -90,12 +90,21 @@ static THD_FUNCTION(adc_thread, arg) {
 
 	chRegSetThreadName("APP_ADC");
 
+	// not tested
+	// set adc inputs to pulldown mode. since the analog mux is seperate from the pins
+	// this doesn't clobber analog mode. in fact all analog mode seems to do is tristate the pins?
+	palSetPadMode(APP_AIN1_GPIO, APP_AIN1_PIN, PAL_MODE_INPUT_PULLDOWN);
+	palSetPadMode(APP_AIN2_GPIO, APP_AIN2_PIN, PAL_MODE_INPUT_PULLDOWN);
+
+	// todo, after closing analog app, need to put back to pure analog mode
+	// palSetPadMode(GPIOA, 6, PAL_MODE_INPUT_ANALOG);
+
 	// Set servo pin as an input with pullup
 	if (use_rx_tx_as_buttons) {
 		palSetPadMode(HW_UART_TX_PORT, HW_UART_TX_PIN, PAL_MODE_INPUT_PULLUP);
 		palSetPadMode(HW_UART_RX_PORT, HW_UART_RX_PIN, PAL_MODE_INPUT_PULLUP);
 	} else {
-		palSetPadMode(adc_Din1_GPIO, adc_Din1_PIN, PAL_MODE_INPUT_PULLUP); // servo 4 now
+		palSetPadMode(APP_DIN1_GPIO, APP_DIN1_PIN , PAL_MODE_INPUT_PULLUP); // servo 4 now
 	}
 
 	is_running = true;
@@ -234,12 +243,12 @@ static THD_FUNCTION(adc_thread, arg) {
                     config.ctrl_type == ADC_CTRL_TYPE_CURRENT_REV_BUTTON_BRAKE_CENTER ||
 					config.ctrl_type == ADC_CTRL_TYPE_CURRENT_NOREV_BRAKE_BUTTON ||
 					config.ctrl_type == ADC_CTRL_TYPE_DUTY_REV_BUTTON) {
-				rev_button = !palReadPad(adc_Din1_GPIO, adc_Din1_PIN);
+				rev_button = !palReadPad(APP_DIN1_GPIO, APP_DIN1_PIN);
 				if (config.rev_button_inverted) {
 					rev_button = !rev_button;
 				}
 			} else {
-				cc_button = !palReadPad(adc_Din1_GPIO, adc_Din1_PIN);
+				cc_button = !palReadPad(APP_DIN1_GPIO, APP_DIN1_PIN);
 				if (config.cc_button_inverted) {
 					cc_button = !cc_button;
 				}
