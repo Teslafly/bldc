@@ -265,10 +265,27 @@ void mcpwm_foc_init(volatile mc_configuration *configuration) {
 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
 	TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
 	TIM_OCInitStructure.TIM_Pulse = TIM1->ARR / 2;
+	// TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+	// TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
+	// TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
+	// TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCNIdleState_Set;
+
+
+	#ifndef inverted_top_fet_driver  // inverts driver signal for top fets
 	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
-	TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
 	TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
+	#else
+	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+	TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
+	#endif
+
+	#ifndef inverted_bottom_fet_driver // inverts driver signal for bottom fets
+	TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
 	TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCNIdleState_Set;
+	#else
+	TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_Low;
+	TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCNIdleState_Set;
+	#endif
 
 	TIM_OC1Init(TIM1, &TIM_OCInitStructure);
 	TIM_OC2Init(TIM1, &TIM_OCInitStructure);
