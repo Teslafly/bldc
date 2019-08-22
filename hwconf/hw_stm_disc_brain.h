@@ -77,7 +77,7 @@
 // #define CURRENT_FILTER_OFF()	palClearPad(GPIOD, 2)
 
 /*
- * ADC Vector
+ * ADC Vector old
  *
  * 0  (1):	IN0		SENS1
  * 1  (2):	IN1		SENS2
@@ -100,9 +100,33 @@
  * 17 (3):  IN3		SENS3
  */
 
-#define HW_ADC_CHANNELS			18
+ /*
+ * ADC Vector new moxie
+ *
+ * 0  (1):	IN0		SENS1 y
+ * 1  (2):	IN1		SENS2 y
+ * 2  (3):	IN2		SENS3 y
+ * 3  (1):	IN10	CURR1 y
+ * 4  (2):	IN11	CURR2 y
+ * 5  (3):	IN12	CURR3 y
+ * 
+ * 6  (1):	IN4	    ADC_EXT1 y
+ * 7  (2):	IN5		ADC_EXT2 y
+ * 8  (3):	IN3	    servo/ADC_EXT3 y
+ * 9  (1):	IN15	TEMP_MOTOR y
+ * 10 (2):	IN14	TEMP_MOS y
+ * 11 (3):	IN13	AN_IN y
+ * 12 (1):	Vrefint  y
+ * 13 (2):	IN0		SENS1
+ * 14 (3):	IN1		SENS2
+// * 15 (1):  IN8		
+// * 16 (2):  IN9		
+ //* 17 (3):  IN3		SENS3
+ */
+
+#define HW_ADC_CHANNELS			15 //18
 #define HW_ADC_INJ_CHANNELS		3
-#define HW_ADC_NBR_CONV			6
+#define HW_ADC_NBR_CONV			5 //6
 
 // ADC Indexes
 #define ADC_IND_SENS1			0
@@ -111,14 +135,11 @@
 #define ADC_IND_CURR1			3
 #define ADC_IND_CURR2			4
 #define ADC_IND_CURR3			5
+
 #define ADC_IND_VIN_SENS		11
 #define ADC_IND_EXT				6
 #define ADC_IND_EXT2			7
-
-#define ADC_IND_TEMP_MOS		8
-#define ADC_IND_TEMP_MOS_2		15
-#define ADC_IND_TEMP_MOS_3		16
-
+#define ADC_IND_TEMP_MOS		10
 #define ADC_IND_TEMP_MOTOR		9
 #define ADC_IND_VREFINT			12
 
@@ -126,6 +147,7 @@
 // 9.9v input = 0.63v out. , 15.7 conv factor,
 // ((VIN_R1 + VIN_R2) / VIN_R2)) = 15.7
 // r2 = 1000, r1=14700
+// 10vin, 0.755 vout, 
 
 // Component parameters (can be overridden)
 #ifndef V_REG
@@ -149,12 +171,14 @@
 #define FAC_CURRENT					((V_REG / 4095.0) / (hall_current_gain))
 
 // Input voltage
-//#define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * ((VIN_R1 + VIN_R2) / VIN_R2))
-#define GET_INPUT_VOLTAGE()		12
+#define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * 1)
+// #define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * ((VIN_R1 + VIN_R2) / VIN_R2))
+//#define GET_INPUT_VOLTAGE()		12
 
 // NTC Termistors
 #define NTC_RES(adc_val)		((4095.0 * 10000.0) / adc_val - 10000.0)
-//#define NTC_TEMP(adc_ind)		hw75_300_get_temp()
+//#define NTC_TEMP(adc_ind)		(1.0 / ((logf(NTC_RES(ADC_Value[adc_ind]) / 10000.0) / 3380.0) + (1.0 / 298.15)) - 273.15)
+
 #define NTC_TEMP(adc_ind)		35 // testing
 
 #define NTC_RES_MOTOR(adc_val)	(10000.0 / ((4095.0 / (float)adc_val) - 1.0)) // Motor temp sensor on low side
@@ -162,7 +186,7 @@
 #ifdef HW75_300_VEDDER_FIRST_PCB
 #define NTC_TEMP_MOTOR(beta)	(-20)
 #else
-#define NTC_TEMP_MOTOR(beta)	(1.0 / ((logf(NTC_RES_MOTOR(ADC_Value[ADC_IND_TEMP_MOTOR]) / 10000.0) / beta) + (1.0 / 298.15)) - 273.15)
+#define NTC_TEMP_MOTOR(beta)	35 //(1.0 / ((logf(NTC_RES_MOTOR(ADC_Value[ADC_IND_TEMP_MOTOR]) / 10000.0) / beta) + (1.0 / 298.15)) - 273.15)
 #endif
 
 
@@ -304,7 +328,7 @@
 #define HW_LIM_TEMP_FET			-40.0, 90.0
 
 // HW-specific functions
-float hw75_300_get_temp(void);
+//float hw75_300_get_temp(void);
 
 	// todo, make inverted high / low sides a define statement
 	//configure inverted phases:
