@@ -39,19 +39,19 @@
 #define MCCONF_L_CURRENT_MAX			60.0	// Current limit in Amperes (Upper)
 #endif
 #ifndef MCCONF_L_CURRENT_MIN
-#define MCCONF_L_CURRENT_MIN			-60.0	// Current limit in Amperes (Lower)
+#define MCCONF_L_CURRENT_MIN			-5.0	// Current limit in Amperes (Lower)
 #endif
 #ifndef MCCONF_L_IN_CURRENT_MAX
-#define MCCONF_L_IN_CURRENT_MAX			99.0	// Input current limit in Amperes (Upper)
+#define MCCONF_L_IN_CURRENT_MAX			50.0	// Input current limit in Amperes (Upper)
 #endif
 #ifndef MCCONF_L_IN_CURRENT_MIN
-#define MCCONF_L_IN_CURRENT_MIN			-60.0	// Input current limit in Amperes (Lower)
+#define MCCONF_L_IN_CURRENT_MIN			-10.0	// Input current limit in Amperes (Lower)
 #endif
 #ifndef MCCONF_L_MAX_ABS_CURRENT
-#define MCCONF_L_MAX_ABS_CURRENT		130.0	// The maximum absolute current above which a fault is generated
+#define MCCONF_L_MAX_ABS_CURRENT		100.0	// The maximum absolute current above which a fault is generated
 #endif
 #ifndef MCCONF_L_MIN_VOLTAGE
-#define MCCONF_L_MIN_VOLTAGE			8.0		// Minimum input voltage
+#define MCCONF_L_MIN_VOLTAGE			11.0		// Minimum input voltage
 #endif
 #ifndef MCCONF_L_MAX_VOLTAGE
 #define MCCONF_L_MAX_VOLTAGE			57.0	// Maximum input voltage
@@ -63,10 +63,10 @@
 #define MCCONF_L_BATTERY_CUT_END		8.0		// Limit the positive current completely at this voltage
 #endif
 #ifndef MCCONF_L_RPM_MAX
-#define MCCONF_L_RPM_MAX				100000.0	// The motor speed limit (Upper)
+#define MCCONF_L_RPM_MAX				50000.0	// The motor speed limit (Upper)
 #endif
 #ifndef MCCONF_L_RPM_MIN
-#define MCCONF_L_RPM_MIN				-100000.0	// The motor speed limit (Lower)
+#define MCCONF_L_RPM_MIN				-50000.0	// The motor speed limit (Lower)
 #endif
 #ifndef MCCONF_L_RPM_START
 #define MCCONF_L_RPM_START				0.8		// Fraction of full speed where RPM current limiting starts
@@ -75,10 +75,10 @@
 #define MCCONF_L_SLOW_ABS_OVERCURRENT	true	// Use the filtered (and hence slower) current for the overcurrent fault detection
 #endif
 #ifndef MCCONF_L_MIN_DUTY
-#define MCCONF_L_MIN_DUTY				0.005	// Minimum duty cycle
+#define MCCONF_L_MIN_DUTY				0.001	// Minimum duty cycle
 #endif
 #ifndef MCCONF_L_MAX_DUTY
-#define MCCONF_L_MAX_DUTY				0.95	// Maximum duty cycle
+#define MCCONF_L_MAX_DUTY				0.99	// Maximum duty cycle
 #endif
 #ifndef MCCONF_L_CURR_MAX_RPM_FBRAKE
 #define MCCONF_L_CURR_MAX_RPM_FBRAKE	300		// Maximum electrical RPM to use full brake at
@@ -219,16 +219,16 @@
 
 // FOC
 #ifndef MCCONF_FOC_CURRENT_KP
-#define MCCONF_FOC_CURRENT_KP			0.03
+#define MCCONF_FOC_CURRENT_KP			0.018
 #endif
 #ifndef MCCONF_FOC_CURRENT_KI
-#define MCCONF_FOC_CURRENT_KI			50.0
+#define MCCONF_FOC_CURRENT_KI			23.4
 #endif
 #ifndef MCCONF_FOC_F_SW
 #define MCCONF_FOC_F_SW					20000.0
 #endif
 #ifndef MCCONF_FOC_DT_US
-#define MCCONF_FOC_DT_US				0.08 // Microseconds for dead time compensation
+#define MCCONF_FOC_DT_US				0.10 // Microseconds for dead time compensation
 #endif
 #ifndef MCCONF_FOC_ENCODER_INVERTED
 #define MCCONF_FOC_ENCODER_INVERTED		false
@@ -249,16 +249,16 @@
 #define MCCONF_FOC_PLL_KI				30000.0
 #endif
 #ifndef MCCONF_FOC_MOTOR_L
-#define MCCONF_FOC_MOTOR_L				0.000007
+#define MCCONF_FOC_MOTOR_L				0.000018
 #endif
 #ifndef MCCONF_FOC_MOTOR_R
-#define MCCONF_FOC_MOTOR_R				0.015
+#define MCCONF_FOC_MOTOR_R				0.024
 #endif
 #ifndef MCCONF_FOC_MOTOR_FLUX_LINKAGE
 #define MCCONF_FOC_MOTOR_FLUX_LINKAGE	0.00245
 #endif
 #ifndef MCCONF_FOC_OBSERVER_GAIN
-#define MCCONF_FOC_OBSERVER_GAIN		9e7		// Can be something like 600 / L
+#define MCCONF_FOC_OBSERVER_GAIN		25e6		// Can be something like 600 / L
 #endif
 #ifndef MCCONF_FOC_OBSERVER_GAIN_SLOW
 #define MCCONF_FOC_OBSERVER_GAIN_SLOW	0.3		// Observer gain scale at minimum duty cycle

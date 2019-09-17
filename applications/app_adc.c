@@ -56,7 +56,7 @@ void app_adc_configure(adc_config *conf) {
 }
 
 void app_adc_start(bool use_rx_tx) {
-	use_rx_tx_as_buttons = use_rx_tx;
+	// use_rx_tx_as_buttons = use_rx_tx;
 	stop_now = false;
 	chThdCreateStatic(adc_thread_wa, sizeof(adc_thread_wa), NORMALPRIO, adc_thread, NULL);
 }

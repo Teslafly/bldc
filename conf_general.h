@@ -170,8 +170,8 @@
 /*
  * Settings for the external LEDs (hardcoded for now)
  */
-#define LED_EXT_BATT_LOW			28.0
-#define LED_EXT_BATT_HIGH			33.0
+#define LED_EXT_BATT_LOW			46.0
+#define LED_EXT_BATT_HIGH			52.0
 
 /*
  * Output WS2811 signal on the HALL1 pin. Notice that hall sensors can't be used

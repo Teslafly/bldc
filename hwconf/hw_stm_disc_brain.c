@@ -63,7 +63,7 @@ void hw_init_gpio(void) {
 	// palSetPadMode(GPIOA, 9, PAL_MODE_ALTERNATE(GPIO_AF_TIM1) |
 	// 		PAL_STM32_OSPEED_HIGHEST |
 	// 		PAL_STM32_PUDR_FLOATING);
-	// pa9 is clobbered by vbus and maybe broken? use altarmate tim1_ch2
+	// pa9 is clobbered by usb_vbus. use altarmate tim1_ch2
 	palSetPadMode(GPIOE, 11, PAL_MODE_ALTERNATE(GPIO_AF_TIM1) |
 		PAL_STM32_OSPEED_HIGHEST |
 		PAL_STM32_PUDR_FLOATING);

@@ -55,7 +55,7 @@
 // The default app is UART in case the UART port is used for
 // firmware updates.
 #ifndef APPCONF_APP_TO_USE
-#define APPCONF_APP_TO_USE					APP_UART
+#define APPCONF_APP_TO_USE					APP_ADC_UART
 #endif
 
 // PPM app configureation
@@ -122,10 +122,10 @@
 #define APPCONF_ADC_VOLTAGE_START			0.9
 #endif
 #ifndef APPCONF_ADC_VOLTAGE_END
-#define APPCONF_ADC_VOLTAGE_END				3.0
+#define APPCONF_ADC_VOLTAGE_END				2.6
 #endif
 #ifndef APPCONF_ADC_VOLTAGE_CENTER
-#define APPCONF_ADC_VOLTAGE_CENTER			2.0
+#define APPCONF_ADC_VOLTAGE_CENTER			1.3
 #endif
 #ifndef APPCONF_ADC_VOLTAGE2_START
 #define APPCONF_ADC_VOLTAGE2_START			0.9
