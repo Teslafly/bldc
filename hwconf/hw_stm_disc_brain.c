@@ -139,7 +139,7 @@ void hw_setup_adc_channels(void) {
 	// ADC2 regular channels
 	ADC_RegularChannelConfig(ADC2, ADC_Channel_1, 1, ADC_SampleTime_15Cycles);  //vec 1 nt
 	ADC_RegularChannelConfig(ADC2, ADC_Channel_11, 2, ADC_SampleTime_15Cycles); //vec 4 nt
-	ADC_RegularChannelConfig(ADC2, ADC_Channel_6, 3, ADC_SampleTime_15Cycles);  //vec 7
+	ADC_RegularChannelConfig(ADC2, ADC_Channel_5, 3, ADC_SampleTime_15Cycles);  //vec 7
 	ADC_RegularChannelConfig(ADC2, ADC_Channel_14, 4, ADC_SampleTime_15Cycles); //vec 10
 	ADC_RegularChannelConfig(ADC2, ADC_Channel_0, 5, ADC_SampleTime_15Cycles);  //vec 13
 	//ADC_RegularChannelConfig(ADC2, ADC_Channel_9, 6, ADC_SampleTime_15Cycles);  //vec 16

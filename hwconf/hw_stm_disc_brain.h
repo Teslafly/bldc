@@ -183,10 +183,7 @@ n* 17 (3):  IN3		SENS3
 //#define NTC_TEMP(adc_ind)		35 // testing
 
 #define NTC_RES_MOTOR(adc_val)	(10000.0 / ((4095.0 / (float)adc_val) - 1.0)) // Motor temp sensor on low side
-#define NTC_TEMP_MOTOR(beta)	35 //(1.0 / ((logf(NTC_RES_MOTOR(ADC_Value[ADC_IND_TEMP_MOTOR]) / 10000.0) / beta) + (1.0 / 298.15)) - 273.15)
-
-
-
+#define NTC_TEMP_MOTOR(beta)	(1.0 / ((logf(NTC_RES_MOTOR(ADC_Value[ADC_IND_TEMP_MOTOR]) / 10000.0) / beta) + (1.0 / 298.15)) - 273.15)
 
 // Voltage on ADC channel
 #define ADC_VOLTS(ch)			((float)ADC_Value[ch] / 4096.0 * V_REG)
@@ -194,13 +191,13 @@ n* 17 (3):  IN3		SENS3
 // Double samples in beginning and end for positive current measurement.
 // Useful when the shunt sense traces have noise that causes offset.
 #ifndef CURR1_DOUBLE_SAMPLE
-#define CURR1_DOUBLE_SAMPLE		1
+#define CURR1_DOUBLE_SAMPLE		0
 #endif
 #ifndef CURR2_DOUBLE_SAMPLE
-#define CURR2_DOUBLE_SAMPLE		1
+#define CURR2_DOUBLE_SAMPLE		0
 #endif
 #ifndef CURR3_DOUBLE_SAMPLE
-#define CURR3_DOUBLE_SAMPLE		1
+#define CURR3_DOUBLE_SAMPLE		0
 #endif
 
 // UART Peripheral (good for moxie drive)
