@@ -200,6 +200,15 @@ n* 17 (3):  IN3		SENS3
 #define CURR3_DOUBLE_SAMPLE		0
 #endif
 
+
+// adc app gpio
+#define HW_REVERSE_PORT         GPIOC
+#define HW_REVERSE_PIN          13
+#define HW_BRAKE_PORT           GPIOB
+#define HW_BRAKE_PIN            5
+
+
+
 // UART Peripheral (good for moxie drive)
 #define HW_UART_DEV				SD3
 #define HW_UART_GPIO_AF			GPIO_AF_USART3
