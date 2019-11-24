@@ -148,7 +148,8 @@ n* 17 (3):  IN3		SENS3
 // ((VIN_R1 + VIN_R2) / VIN_R2)) = 15.7
 // r2 = 1000, r1=14700
 // 10vin, 0.755 vout, 
-// 20vin , 1.51vdiv = 13.25
+// 20vin , 1.51vdiv = 13.25 (no jumper)
+// 47.3vin, 2.40vout, div=19.7 (72v jumper)
 
 // Component parameters (can be overridden)
 #ifndef V_REG
@@ -172,7 +173,7 @@ n* 17 (3):  IN3		SENS3
 #define FAC_CURRENT					((V_REG / 4095.0) / (hall_current_gain))
 
 // Input voltage
-#define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * 12.16)
+#define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * 19.7)
 // #define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * ((VIN_R1 + VIN_R2) / VIN_R2))
 //#define GET_INPUT_VOLTAGE()		12
 
@@ -191,13 +192,13 @@ n* 17 (3):  IN3		SENS3
 // Double samples in beginning and end for positive current measurement.
 // Useful when the shunt sense traces have noise that causes offset.
 #ifndef CURR1_DOUBLE_SAMPLE
-#define CURR1_DOUBLE_SAMPLE		0
+#define CURR1_DOUBLE_SAMPLE		1
 #endif
 #ifndef CURR2_DOUBLE_SAMPLE
-#define CURR2_DOUBLE_SAMPLE		0
+#define CURR2_DOUBLE_SAMPLE		1
 #endif
 #ifndef CURR3_DOUBLE_SAMPLE
-#define CURR3_DOUBLE_SAMPLE		0
+#define CURR3_DOUBLE_SAMPLE		1
 #endif
 
 
