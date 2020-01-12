@@ -1,0 +1,22 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // Sample config: https://os.mbed.com/users/janjongboom/notebook/debugging-ublox_evk_odin_w2-with-openocd-and-visua/
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "VESC Debug",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceRoot}/build/BLDC_4_ChibiOS.elf",
+            "servertype": "openocd",
+            "device": "stm32f4x",
+            "configFiles": ["${workspaceFolder}/stm32-vesc-openocd-vscode.cfg"],
+            "linux": {
+                "preLaunchTask": "build"
+            }
+        }       
+    ]
+}

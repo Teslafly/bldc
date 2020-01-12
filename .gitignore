@@ -2,3 +2,7 @@
 
 build
 .dep
+
+# User Workspaces
+.vscode/.cortex*
+#*.code-workspace
