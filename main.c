@@ -195,6 +195,11 @@ int main(void) {
 
 	HW_EARLY_INIT();
 
+#ifdef BOOT_OK_GPIO
+	palSetPadMode(BOOT_OK_GPIO, BOOT_OK_PIN, PAL_MODE_OUTPUT_PUSHPULL);
+	palClearPad(BOOT_OK_GPIO, BOOT_OK_PIN);
+#endif
+
 	chThdSleepMilliseconds(100);
 
 	hw_init_gpio();
@@ -222,7 +227,10 @@ int main(void) {
 	mc_interface_init(&mcconf);
 
 	commands_init();
+
+#if COMM_USE_USB
 	comm_usb_init();
+#endif
 
 #if CAN_ENABLE
 	comm_can_init();
@@ -336,6 +344,11 @@ int main(void) {
 
 #ifdef HW_SHUTDOWN_HOLD_ON
 	shutdown_init();
+#endif
+
+#ifdef BOOT_OK_GPIO
+	chThdSleepMilliseconds(500);
+	palSetPad(BOOT_OK_GPIO, BOOT_OK_PIN);
 #endif
 
 	for(;;) {
