@@ -20,13 +20,14 @@
 #ifndef HW_moxie_mini_H_
 #define HW_moxie_mini_H_
 
-#define HW_NAME					"moxie_mini_v1"
+#define HW_NAME					"moxie_mini_v1.2"
 
 // HW properties
-#define HW_HAS_DRV8301
+#define HW_HAS_DRV8323S
 #define HW_HAS_3_SHUNTS
-#define HW_HAS_PERMANENT_NRF
 
+#undef APPCONF_APP_TO_USE
+#define APPCONF_APP_TO_USE APP_ADC_UART // default app
 /*
 * hw info
 *
@@ -49,24 +50,35 @@ ports:
 
 
 // Macros
+// stm32 discovery leds
 #define LED_GREEN_GPIO			GPIOD
 #define LED_GREEN_PIN			12
 #define LED_RED_GPIO			GPIOD
 #define LED_RED_PIN				14
+// actual leds
+// #define LED_GREEN_GPIO			GPIOB
+// #define LED_GREEN_PIN			2
+// #define LED_RED_GPIO			GPIOD
+// #define LED_RED_PIN				2
 
 #define LED_GREEN_ON()			palSetPad(LED_GREEN_GPIO, LED_GREEN_PIN)
 #define LED_GREEN_OFF()			palClearPad(LED_GREEN_GPIO, LED_GREEN_PIN)
 #define LED_RED_ON()			palSetPad(LED_RED_GPIO, LED_RED_PIN)
 #define LED_RED_OFF()			palClearPad(LED_RED_GPIO, LED_RED_PIN)
 
-#define GATE_ENABLE_GPIO		GPIOB
-#define GATE_ENABLE_PIN			5
-#define ENABLE_GATE()			palSetrPad(GATE_ENABLE_GPIO, GATE_ENABLE_PIN)
+#define GATE_ENABLE_GPIO		GPIOC
+#define GATE_ENABLE_PIN			15
+#define ENABLE_GATE()			palSetPad(GATE_ENABLE_GPIO, GATE_ENABLE_PIN)
 #define DISABLE_GATE()			palClearPad(GATE_ENABLE_GPIO, GATE_ENABLE_PIN)
+
+
+#define DRV_FAULT_GPIO		    GPIOC
+#define DRV_FAULT_PIN			9
+#define IS_DRV_FAULT()			(!palReadPad(DRV_FAULT_GPIO, DRV_FAULT_PIN))
 
 #define DCCAL_ON() // drv spi fcn
 #define DCCAL_OFF()
-#define IS_DRV_FAULT()			(!palReadPad(GPIOB, 7))
+
 
 
 #ifdef HW_HAS_SHUTDOWN
@@ -87,7 +99,7 @@ ports:
 
 //functions
 bool hw_sample_shutdown_button(void);							
-#else
+#endif
 
 
 /*
@@ -139,21 +151,21 @@ bool hw_sample_shutdown_button(void);
 #define HW_ADC_NBR_CONV			5
 
 // ADC Indexes
-#define ADC_IND_SENS1			0
-#define ADC_IND_SENS2			1
-#define ADC_IND_SENS3			2
-#define ADC_IND_CURR1			3
-#define ADC_IND_CURR2			4
-#define ADC_IND_CURR3			5
+#define ADC_IND_CURR1			0
+#define ADC_IND_CURR2			1
+#define ADC_IND_CURR3			2
+#define ADC_IND_SENS1			3
+#define ADC_IND_SENS2			4
+#define ADC_IND_SENS3			5
+
 #define ADC_IND_VIN_SENS		11
 #define ADC_IND_EXT				6
 #define ADC_IND_EXT2			7
-#define ADC_IND_TEMP_MOS		8
-#define ADC_IND_TEMP_MOTOR		9
+#define ADC_IND_TEMP_MOS		9
+#define ADC_IND_TEMP_MOTOR		8
 #define ADC_IND_VREFINT			12
-#ifdef HW60_IS_MK3
 #define ADC_IND_SHUTDOWN		10
-#endif
+
 
 // ADC macros and settings
 
@@ -179,10 +191,10 @@ bool hw_sample_shutdown_button(void);
 
 // NTC Termistors
 #define NTC_RES(adc_val)		((4095.0 * 10000.0) / adc_val - 10000.0)
-#define NTC_TEMP(adc_ind)		(1.0 / ((logf(NTC_RES(ADC_Value[adc_ind]) / 10000.0) / 3380.0) + (1.0 / 298.15)) - 273.15)
+#define NTC_TEMP(adc_ind)		25 //(1.0 / ((logf(NTC_RES(ADC_Value[adc_ind]) / 10000.0) / 3380.0) + (1.0 / 298.15)) - 273.15)
 
 #define NTC_RES_MOTOR(adc_val)	(10000.0 / ((4095.0 / (float)adc_val) - 1.0)) // Motor temp sensor on low side
-#define NTC_TEMP_MOTOR(beta)	(1.0 / ((logf(NTC_RES_MOTOR(ADC_Value[ADC_IND_TEMP_MOTOR]) / 10000.0) / beta) + (1.0 / 298.15)) - 273.15)
+#define NTC_TEMP_MOTOR(beta)	25 //(1.0 / ((logf(NTC_RES_MOTOR(ADC_Value[ADC_IND_TEMP_MOTOR]) / 10000.0) / beta) + (1.0 / 298.15)) - 273.15)
 
 // Voltage on ADC channel
 #define ADC_VOLTS(ch)			((float)ADC_Value[ch] / 4096.0 * V_REG)
@@ -202,9 +214,9 @@ bool hw_sample_shutdown_button(void);
 // EXT ADC GPIOs
 // fix
 #define HW_ADC_EXT_GPIO			GPIOA
-#define HW_ADC_EXT_PIN			5
+#define HW_ADC_EXT_PIN			4
 #define HW_ADC_EXT2_GPIO		GPIOA
-#define HW_ADC_EXT2_PIN			6
+#define HW_ADC_EXT2_PIN			5
 
 // UART Peripheral
 // *good to moxie?
@@ -229,9 +241,11 @@ bool hw_sample_shutdown_button(void);
 // !!!!!!!!!! test
 // ICU Peripheral for servo decoding (from unity conf, test.)
 // servo actually on PA3, tim9/ch2, or tim5/ch4
+
+#define HW_USE_SERVO_TIM9
 #define HW_ICU_TIMER            TIM9
 #define HW_ICU_DEV              ICUD9
-//HW_ICU_TIM_CLK_EN() need to bring this over?
+#define HW_ICU_TIM_CLK_EN()     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM9, ENABLE)
 #define HW_ICU_CHANNEL          ICU_CHANNEL_2
 #define HW_ICU_GPIO_AF          GPIO_AF_TIM9
 #define HW_ICU_GPIO             GPIOA
@@ -277,32 +291,32 @@ bool hw_sample_shutdown_button(void);
 
 // // SPI pins
 // // connected to hall port for direct spi encoder
-// #define HW_SPI_DEV				SPID1
-// #define HW_SPI_GPIO_AF			GPIO_AF_SPI1
-// #define HW_SPI_PORT_NSS			GPIOA
-// #define HW_SPI_PIN_NSS			4
-// #define HW_SPI_PORT_SCK			GPIOA
-// #define HW_SPI_PIN_SCK			5
-// #define HW_SPI_PORT_MOSI		GPIOA
-// #define HW_SPI_PIN_MOSI			7
-// #define HW_SPI_PORT_MISO		GPIOA
-// #define HW_SPI_PIN_MISO			6
+// fix these/
+#define HW_SPI_DEV				SPID1
+#define HW_SPI_GPIO_AF			GPIO_AF_SPI1
+#define HW_SPI_PORT_NSS			GPIOA
+#define HW_SPI_PIN_NSS			4
+#define HW_SPI_PORT_SCK			GPIOA
+#define HW_SPI_PIN_SCK			5
+#define HW_SPI_PORT_MOSI		GPIOA
+#define HW_SPI_PIN_MOSI			7
+#define HW_SPI_PORT_MISO		GPIOA
+#define HW_SPI_PIN_MISO			6
 
 // SPI for DRV8353
 // *good to moxie? no
-// todo: change to drv8353
 // mosi = pb1
 // miso = pb12
 // sck = pc13
 // cs =  pc14
-#define DRV8301_MOSI_GPIO		GPIOB
-#define DRV8301_MOSI_PIN		1
-#define DRV8301_MISO_GPIO		GPIOB
-#define DRV8301_MISO_PIN		12
-#define DRV8301_SCK_GPIO		GPIOC
-#define DRV8301_SCK_PIN			13
-#define DRV8301_CS_GPIO			GPIOC
-#define DRV8301_CS_PIN			14
+#define DRV8323S_MOSI_GPIO		GPIOB
+#define DRV8323S_MOSI_PIN		1
+#define DRV8323S_MISO_GPIO		GPIOB
+#define DRV8323S_MISO_PIN		12
+#define DRV8323S_SCK_GPIO		GPIOC
+#define DRV8323S_SCK_PIN		13
+#define DRV8323S_CS_GPIO		GPIOC
+#define DRV8323S_CS_PIN			14
 
 
 // // MPU9250
@@ -354,5 +368,9 @@ bool hw_sample_shutdown_button(void);
 #define HW_LIM_DUTY_MIN			0.0, 0.5
 #define HW_LIM_DUTY_MAX			0.0, 0.95
 #define HW_LIM_TEMP_FET			-40.0, 90.0
+
+// test_pal_lld_setgroupmode(ioportid_t port,
+//                            ioportmask_t mask,
+//                            iomode_t mode);
 
 #endif /* HW_60_H_ */
