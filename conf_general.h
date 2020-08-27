@@ -183,7 +183,7 @@
 /*
  * Set APP_CUSTOM_TO_USE to the name of the main C file of the custom application.
  */
-//#define APP_CUSTOM_TO_USE			"app_custom_template.c"
+#define APP_CUSTOM_TO_USE			"app_gearbox_servo.c"
 //#define APP_CUSTOM_TO_USE			"app_motor_heater.c"
 //#include "app_erockit_conf.h"
 
