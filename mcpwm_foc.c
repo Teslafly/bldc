@@ -2731,9 +2731,31 @@ void mcpwm_foc_adc_int_handler(void *p, uint32_t flags) {
 	motor_now->m_tachometer += diff;
 	motor_now->m_tachometer_abs += abs(diff);
 
+
+	// float enc_ang = 0;
+	// if (encoder_is_configured()) {
+	// 	if (virtual_motor_is_connected()){
+	// 		enc_ang = virtual_motor_get_angle_deg();
+	// 	} else {
+	// 		enc_ang = encoder_read_deg();
+	// 	}
+
+	// 	float phase_tmp = enc_ang;
+	// 	if (conf_now->foc_encoder_inverted) {
+	// 		phase_tmp = 360.0 - phase_tmp;
+	// 	}
+	// 	phase_tmp *= conf_now->foc_encoder_ratio;
+	// 	phase_tmp -= conf_now->foc_encoder_offset;
+	// 	utils_norm_angle((float*)&phase_tmp);
+	// 	motor_now->m_phase_now_encoder = phase_tmp * (M_PI / 180.0);
+	//}
+
+
+
 	// Track position control angle
 	// TODO: Have another look at this.
 	float angle_now = 0.0;
+	float motor_angle = 0.0;
 	if (encoder_is_configured()) {
 		if (conf_now->m_sensor_port_mode == SENSOR_PORT_MODE_TS5700N8501_MULTITURN) {
 			angle_now = encoder_read_deg_multiturn();
@@ -2745,18 +2767,36 @@ void mcpwm_foc_adc_int_handler(void *p, uint32_t flags) {
 	}
 
 	if (conf_now->p_pid_ang_div > 0.98 && conf_now->p_pid_ang_div < 1.02) {
-		motor_now->m_pos_pid_now = angle_now;
+		// motor_now->m_pos_pid_now = angle_now;
+		motor_angle = angle_now;
 	} else {
-		float diff_f = utils_angle_difference(angle_now, motor_now->m_pid_div_angle_last);
-		motor_now->m_pid_div_angle_last = angle_now;
-		motor_now->m_pos_pid_now += diff_f / conf_now->p_pid_ang_div;
-		utils_norm_angle((float*)&motor_now->m_pos_pid_now);
+		// float diff_f = utils_angle_difference(angle_now, motor_now->m_pid_div_angle_last);
+		// motor_now->m_pid_div_angle_last = angle_now;
+		// motor_now->m_pos_pid_now += diff_f / conf_now->p_pid_ang_div;
+		//utils_norm_angle((float*)&motor_now->m_pos_pid_now);
+
+		// absolute difference
+		// use m_tachometer and foc_encoder_ratio & to verify # of revolutions?
+			// 	phase_tmp *= conf_now->foc_encoder_ratio;
+			// 	phase_tmp -= conf_now->foc_encoder_offset;
+
+		// is just basing on tachometer high enough resolution for pid loop?
+		motor_angle = ((motor_now->m_tachometer)* (360/2))/(conf_now->foc_encoder_ratio); // get absolute # of motor revolutions
+		motor_angle = (motor_angle) / (conf_now->p_pid_ang_div); // convert revolutions into current effective angle
+		// motor_now->m_pos_pid_now = motor_angle;
+
+		// 	motor_angle = angle_now + motor_revolutions *360
+
+		if (conf_now->foc_encoder_inverted){// tachometer always in same direction. 
+			motor_angle = -motor_angle;
+		}
 	}
 
 	// Run position control
 	if (motor_now->m_state == MC_STATE_RUNNING) {
-		run_pid_control_pos(motor_now->m_pos_pid_now, motor_now->m_pos_pid_set, dt, motor_now);
+		run_pid_control_pos(motor_angle, motor_now->m_pos_pid_set, dt, motor_now);
 	}
+	motor_now->m_pos_pid_now = motor_angle;
 
 #ifdef AD2S1205_SAMPLE_GPIO
 	// Release sample in the AD2S1205 resolver IC.
@@ -3555,6 +3595,80 @@ static void svm(float alpha, float beta, uint32_t PWMHalfPeriod,
 	*svm_sector = sector;
 }
 
+// static void run_pid_control_pos(float angle_now, float angle_set, float dt, volatile motor_all_state_t *motor) {
+// 	volatile mc_configuration *conf_now = motor->m_conf;
+// 	float p_term;
+// 	float d_term;
+
+// 	// PID is off. Return.
+// 	if (motor->m_control_mode != CONTROL_MODE_POS) {
+// 		motor->m_pos_i_term = 0;
+// 		motor->m_pos_prev_error = 0;
+// 		return;
+// 	}
+
+// 	// Compute parameters
+// 	float error = utils_angle_difference(angle_set, angle_now);
+
+// 	if (encoder_is_configured()) {
+// 		if (conf_now->foc_encoder_inverted) {
+// 			error = -error;
+// 		}
+// 	}
+
+// 	p_term = error * conf_now->p_pid_kp;
+// 	motor->m_pos_i_term += error * (conf_now->p_pid_ki * dt);
+
+// 	// Average DT for the D term when the error does not change. This likely
+// 	// happens at low speed when the position resolution is low and several
+// 	// control iterations run without position updates.
+// 	// TODO: Are there problems with this approach?
+// 	motor->m_pos_dt_int += dt;
+// 	if (error == motor->m_pos_prev_error) {
+// 		d_term = 0.0;
+// 	} else {
+// 		d_term = (error - motor->m_pos_prev_error) * (conf_now->p_pid_kd / motor->m_pos_dt_int);
+// 		motor->m_pos_dt_int = 0.0;
+// 	}
+
+// 	// Filter D
+// 	UTILS_LP_FAST(motor->m_pos_d_filter, d_term, conf_now->p_pid_kd_filter);
+// 	d_term = motor->m_pos_d_filter;
+
+
+// 	// I-term wind-up protection
+// 	float p_tmp = p_term;
+// 	utils_truncate_number_abs(&p_tmp, 1.0);
+// 	utils_truncate_number_abs((float*)&motor->m_pos_i_term, 1.0 - fabsf(p_tmp));
+
+// 	// Store previous error
+// 	motor->m_pos_prev_error = error;
+
+// 	// Calculate output
+// 	float output = p_term + motor->m_pos_i_term + d_term;
+// 	utils_truncate_number(&output, -1.0, 1.0);
+
+// 	if (encoder_is_configured()) {
+// 		if (encoder_index_found()) {
+// 			motor->m_iq_set = output * conf_now->lo_current_max;
+// 		} else {
+// 			// Rotate the motor with 40 % power until the encoder index is found.
+// 			motor->m_iq_set = 0.4 * conf_now->lo_current_max;
+// 		}
+// 	} else {
+// 		motor->m_iq_set = output * conf_now->lo_current_max;
+// 	}
+// }
+
+/**
+ * @brief absolute angle pid control. angle 0 -> 720 will rotate the motor twice.
+ * 
+ * @param angle_now 
+ * @param angle_set 
+ * @param dt 
+ * @param motor 
+ */
+//static void run_pid_control_pos_absolute(float angle_now, float angle_set, float dt, volatile motor_all_state_t *motor) {
 static void run_pid_control_pos(float angle_now, float angle_set, float dt, volatile motor_all_state_t *motor) {
 	volatile mc_configuration *conf_now = motor->m_conf;
 	float p_term;
@@ -3568,7 +3682,8 @@ static void run_pid_control_pos(float angle_now, float angle_set, float dt, vola
 	}
 
 	// Compute parameters
-	float error = utils_angle_difference(angle_set, angle_now);
+	//float error = utils_angle_difference(angle_set, angle_now); // compute closest angle,
+	float error = angle_set - angle_now; // compute difference of angles including all rotations
 
 	if (encoder_is_configured()) {
 		if (conf_now->foc_encoder_inverted) {

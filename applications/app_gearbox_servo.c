@@ -32,13 +32,19 @@
 // Only available if servo output is not active
 #if !SERVO_OUT_ENABLE
 
+typedef enum {
+	PPM_CTRL_TYPE_NONE_SERVO = 0,
+	PPM_CTRL_TYPE_CURRENT_NOREV_SERVO,
+	PPM_CTRL_TYPE_ABS_SERVO,
+} servo_control_modes;
+
 // Settings
 #define MAX_CAN_AGE						0.1
 #define MIN_PULSES_WITHOUT_POWER		50
 
 // Threads
-static THD_FUNCTION(ppm_thread, arg);
-static THD_WORKING_AREA(ppm_thread_wa, 1536);
+static THD_FUNCTION(servo_thread, arg);
+static THD_WORKING_AREA(servo_thread_wa, 1536);
 static thread_t *ppm_tp;
 static volatile bool ppm_rx = false;
 
@@ -52,13 +58,19 @@ static volatile ppm_config config;
 static volatile int pulses_without_power = 0;
 static float input_val = 0.0;
 static volatile float direction_hyst = 0;
+static volatile servo_control_modes control_mode = PPM_CTRL_TYPE_NONE_SERVO;
 
 // Private functions
 #endif
 
-void app_ppm_configure(ppm_config *conf) {
+void app_custom_configure(app_configuration *conf ) {
+	
 #if !SERVO_OUT_ENABLE
-	config = *conf;
+	//config = *conf; //(ppm_config *conf)
+	//appconf = *conf;
+	//config = appconf.app_ppm_conf;
+	config = (*conf).app_ppm_conf;  // grab ppm app config.
+
 	pulses_without_power = 0;
 
 	if (is_running) {
@@ -70,15 +82,22 @@ void app_ppm_configure(ppm_config *conf) {
 	(void)conf;
 #endif
 }
-
-void app_ppm_start(void) {
+/**
+ * @brief 
+ * 
+ */
+void app_custom_start(void) {
 #if !SERVO_OUT_ENABLE
 	stop_now = false;
-	chThdCreateStatic(ppm_thread_wa, sizeof(ppm_thread_wa), NORMALPRIO, ppm_thread, NULL);
+	//control_mode = PPM_CTRL_TYPE_NONE_SERVO;
+	chThdCreateStatic(servo_thread_wa, sizeof(servo_thread_wa), NORMALPRIO, servo_thread, NULL);
 #endif
 }
-
-void app_ppm_stop(void) {
+ /**
+  * @brief 
+  * 
+  */
+void app_custom_stop(void) {
 #if !SERVO_OUT_ENABLE
 	stop_now = true;
 
@@ -93,7 +112,7 @@ void app_ppm_stop(void) {
 #endif
 }
 
-float app_ppm_get_decoded_level(void) {
+float app_ppm_servo_get_decoded_level(void) {
 #if !SERVO_OUT_ENABLE
 	return input_val;
 #else
@@ -109,15 +128,27 @@ static void servodec_func(void) {
 	chSysUnlockFromISR();
 }
 
-static THD_FUNCTION(ppm_thread, arg) {
+/**
+ * @brief Construct a new thd function object
+ * 	 servo app main thread.
+ * 
+ */
+
+static THD_FUNCTION(servo_thread, arg) {
 	(void)arg;
 
-	chRegSetThreadName("APP_PPM");
+	chRegSetThreadName("APP_PPM_SERVO");
 	ppm_tp = chThdGetSelfX();
 
 	servodec_set_pulse_options(config.pulse_start, config.pulse_end, config.median_filter);
 	servodec_init(servodec_func);
 	is_running = true;
+
+
+	// limit switch pin
+	//palSetPadMode(HW_ICU_GPIO, HW_ICU_PIN, PAL_MODE_INPUT_PULLUP);
+
+	mc_interface_get_tachometer_value(true); // resets tachometer to 0, mostly helps with debug here.
 
 	for(;;) {
 		chEvtWaitAnyTimeout((eventmask_t)1, MS2ST(2));
@@ -137,26 +168,27 @@ static THD_FUNCTION(ppm_thread, arg) {
 		float servo_val = servodec_get_servo(0);
 		float servo_ms = utils_map(servo_val, -1.0, 1.0, config.pulse_start, config.pulse_end);
 
-		switch (config.ctrl_type) {
+		switch (PPM_CTRL_TYPE_CURRENT_NOREV) {
 		case PPM_CTRL_TYPE_CURRENT_NOREV:
-		case PPM_CTRL_TYPE_DUTY_NOREV:
-		case PPM_CTRL_TYPE_PID_NOREV:
+		//case PPM_CTRL_TYPE_DUTY_NOREV:
+		// case PPM_CTRL_TYPE_PID_NOREV:
 			input_val = servo_val;
 			servo_val += 1.0;
 			servo_val /= 2.0;
 			break;
 
-		default:
-			// Mapping with respect to center pulsewidth
-			if (servo_ms < config.pulse_center) {
-				servo_val = utils_map(servo_ms, config.pulse_start,
-						config.pulse_center, -1.0, 0.0);
-			} else {
-				servo_val = utils_map(servo_ms, config.pulse_center,
-						config.pulse_end, 0.0, 1.0);
-			}
-			input_val = servo_val;
-			break;
+		// 
+		// default:
+		// 	// Mapping with respect to center pulsewidth
+		// 	if (servo_ms < config.pulse_center) {
+		// 		servo_val = utils_map(servo_ms, config.pulse_start,
+		// 				config.pulse_center, -1.0, 0.0);
+		// 	} else {
+		// 		servo_val = utils_map(servo_ms, config.pulse_center,
+		// 				config.pulse_end, 0.0, 1.0);
+		// 	}
+		// 	input_val = servo_val;
+		// 	break;
 		}
 
 		// All pins and buttons are still decoded for debugging, even
@@ -182,10 +214,6 @@ static THD_FUNCTION(ppm_thread, arg) {
 		static float servo_val_ramp = 0.0;
 		float ramp_time = fabsf(servo_val) > fabsf(servo_val_ramp) ? config.ramp_time_pos : config.ramp_time_neg;
 
-		// TODO: Remember what this was about?
-//		if (fabsf(servo_val) > 0.001) {
-//			ramp_time = fminf(config.ramp_time_pos, config.ramp_time_neg);
-//		}
 
 		const float dt = (float)ST2MS(chVTTimeElapsedSinceX(last_time)) / 1000.0;
 		last_time = chVTGetSystemTimeX();
@@ -196,142 +224,130 @@ static THD_FUNCTION(ppm_thread, arg) {
 			servo_val = servo_val_ramp;
 		}
 
+		// at this point, servo_val has been mapped, deadbanded, and scaled.
+		// it is a value from 0 to 1.0 mapped from pulselength start to pulselength end.
+
 		float current = 0;
 		bool current_mode = false;
-		bool current_mode_brake = false;
-		bool send_current = false;
-		bool send_duty = false;
-		static bool force_brake = true;
+		//bool current_mode_brake = false;
+		//bool send_current = false;
+		//bool send_duty = false;
+		//static bool force_brake = true;
 		static int8_t did_idle_once = 0;
-		float rpm_local = mc_interface_get_rpm();
-		float rpm_lowest = rpm_local;
+		//float rpm_local = mc_interface_get_rpm();
+		//loat rpm_lowest = rpm_local;
 
-		switch (config.ctrl_type) {
-		case PPM_CTRL_TYPE_CURRENT_BRAKE_REV_HYST:
-			current_mode = true;
+		
+		static bool servo_homed = true; // for testing with no home switch
+		//control_mode = PPM_CTRL_TYPE_NONE_SERVO;
 
-			// Hysteresis 20 % of actual RPM
-			if (force_brake) {
-				if (rpm_local < config.max_erpm_for_dir - direction_hyst) { // for 2500 it's 2000
-					force_brake = false;
-					did_idle_once = 0;
+		// custom vars
+		//bool servo_homed = false; // not homed on boot
+		//bool servo_homed = true; // for testing with no home switch
+
+		// custom conf:
+		// float max_revolutions = (90/360)*(50/1);  // custom. output = 90 degrees, 50:1 gearbox
+		// float min_revolutions = 0;
+		// zero offset
+
+		// custom code
+		//float rotations;
+		//rotations = mc_interface_get_tachometer_value(false) / (??);
+		//motor pole number = encoder_ratio *2
+		//revolution = motor pole number * 3
+
+		// revolution_multiplier = 
+
+		bool limit_switch_input = false;
+		//limit_switch_input = !palReadPad(HW_ICU_GPIO, HW_ICU_PIN); // read limit switch
+
+		// check if we have homed and limit switch is pressed.
+		if  (servo_homed == false && limit_switch_input == true){
+				servo_homed == true;
+				mc_interface_get_tachometer_value(true); // resets tachometer to 0
+				// or
+				//mcpwm_foc_set_tachometer_value(3*encoder_ratio*2*limit_switch_zero_revolutions); 
+		}
+
+		// if not homed, go into current mode control
+		// if homed, go into absolute servo control.
+		if (servo_homed == false){
+			//config.ctrl_type = PPM_CTRL_TYPE_CURRENT_NOREV;
+			control_mode = PPM_CTRL_TYPE_CURRENT_NOREV_SERVO;
+		}else{
+			//config.ctrl_type = PPM_CTRL_TYPE_TACH_SERVO;
+			// remap to min_revolutions / max_revolutions
+			control_mode = PPM_CTRL_TYPE_ABS_SERVO;
+		}
+
+		switch (control_mode) {
+			case PPM_CTRL_TYPE_ABS_SERVO: // make this an actual type.
+				current_mode = false; 
+				mc_interface_set_pid_pos(servo_val * 360);
+				if (fabsf(servo_val) < 0.001) {
+					pulses_without_power++;
 				}
-			} else {
-				if (rpm_local > config.max_erpm_for_dir + direction_hyst) { // for 2500 it's 3000
-					force_brake = true;
-					did_idle_once = 0;
-				}
-			}
+				break;
 
-			if (servo_val >= 0.0) {
-				if (servo_val == 0.0) {
-					// if there was a idle in between then allow going backwards
-					if (did_idle_once == 1 && !force_brake) {
-						did_idle_once = 2;
-					}
-				} else{
-					// accelerated forward or fast enough at least
-					if (rpm_local > -config.max_erpm_for_dir){ // for 2500 it's -2500
-						did_idle_once = 0;
-					}
-				}
 
-				current = servo_val * mcconf->lo_current_motor_max_now;
-			} else {
-				// too fast
-				if (force_brake){
-					current_mode_brake = true;
-				} else{
-					// not too fast backwards
-					if (rpm_local > -config.max_erpm_for_dir) { // for 2500 it's -2500
-						// first time that we brake and we are not too fast
-						if (did_idle_once != 2) {
-							did_idle_once = 1;
-							current_mode_brake = true;
-						}
-					// too fast backwards
-					} else {
-						// if brake was active already
-						if (did_idle_once == 1) {
-							current_mode_brake = true;
-						} else {
-							// it's ok to go backwards now braking would be strange now
-							did_idle_once = 2;
-						}
-					}
-				}
-
-				if (current_mode_brake) {
-					// braking
-					current = fabsf(servo_val * mcconf->lo_current_motor_min_now);
+			// 	break;
+			case PPM_CTRL_TYPE_CURRENT_NOREV_SERVO:
+				current_mode = true;
+				if ((servo_val >= 0.0 && rpm_now > 0.0) || (servo_val < 0.0 && rpm_now < 0.0)) {
+					current = servo_val * mcconf->lo_current_motor_max_now;
 				} else {
-					// reverse acceleration
 					current = servo_val * fabsf(mcconf->lo_current_motor_min_now);
 				}
+
+				if (fabsf(servo_val) < 0.001) {
+					pulses_without_power++;
+				}
+				break;
+
+			// case PPM_CTRL_TYPE_CURRENT_NOREV_BRAKE:
+			// case PPM_CTRL_TYPE_CURRENT_SMART_REV:
+			// 	current_mode = true;
+			// 	current_mode_brake = servo_val < 0.0;
+
+			// 	if (servo_val >= 0.0 && rpm_now > 0.0) {
+			// 		current = servo_val * mcconf->lo_current_motor_max_now;
+			// 	} else {
+			// 		current = fabsf(servo_val * mcconf->lo_current_motor_min_now);
+			// 	}
+
+			// 	if (fabsf(servo_val) < 0.001) {
+			// 		pulses_without_power++;
+			// 	}
+			// 	break;
+
+			// case PPM_CTRL_TYPE_DUTY:
+			// case PPM_CTRL_TYPE_DUTY_NOREV:
+			// 	if (fabsf(servo_val) < 0.001) {
+			// 		pulses_without_power++;
+			// 	}
+
+			// 	if (!(pulses_without_power < MIN_PULSES_WITHOUT_POWER && config.safe_start)) {
+			// 		mc_interface_set_duty(utils_map(servo_val, -1.0, 1.0, -mcconf->l_max_duty, mcconf->l_max_duty));
+			// 		send_duty = true;
+			// 	}
+			// 	break;
+
+			// case PPM_CTRL_TYPE_PID:
+			// case PPM_CTRL_TYPE_PID_NOREV:
+			// 	if (fabsf(servo_val) < 0.001) {
+			// 		pulses_without_power++;
+			// 	}
+
+			// 	if (!(pulses_without_power < MIN_PULSES_WITHOUT_POWER && config.safe_start)) {
+			// 		mc_interface_set_pid_speed(servo_val * config.pid_max_erpm);
+			// 		send_current = true;
+			// 	}
+			// 	break;
+
+			default:
+				continue;
 			}
-
-			if (fabsf(servo_val) < 0.001) {
-				pulses_without_power++;
-			}
-
-			break;
-		case PPM_CTRL_TYPE_CURRENT:
-		case PPM_CTRL_TYPE_CURRENT_NOREV:
-			current_mode = true;
-			if ((servo_val >= 0.0 && rpm_now > 0.0) || (servo_val < 0.0 && rpm_now < 0.0)) {
-				current = servo_val * mcconf->lo_current_motor_max_now;
-			} else {
-				current = servo_val * fabsf(mcconf->lo_current_motor_min_now);
-			}
-
-			if (fabsf(servo_val) < 0.001) {
-				pulses_without_power++;
-			}
-			break;
-
-		case PPM_CTRL_TYPE_CURRENT_NOREV_BRAKE:
-		case PPM_CTRL_TYPE_CURRENT_SMART_REV:
-			current_mode = true;
-			current_mode_brake = servo_val < 0.0;
-
-			if (servo_val >= 0.0 && rpm_now > 0.0) {
-				current = servo_val * mcconf->lo_current_motor_max_now;
-			} else {
-				current = fabsf(servo_val * mcconf->lo_current_motor_min_now);
-			}
-
-			if (fabsf(servo_val) < 0.001) {
-				pulses_without_power++;
-			}
-			break;
-
-		case PPM_CTRL_TYPE_DUTY:
-		case PPM_CTRL_TYPE_DUTY_NOREV:
-			if (fabsf(servo_val) < 0.001) {
-				pulses_without_power++;
-			}
-
-			if (!(pulses_without_power < MIN_PULSES_WITHOUT_POWER && config.safe_start)) {
-				mc_interface_set_duty(utils_map(servo_val, -1.0, 1.0, -mcconf->l_max_duty, mcconf->l_max_duty));
-				send_duty = true;
-			}
-			break;
-
-		case PPM_CTRL_TYPE_PID:
-		case PPM_CTRL_TYPE_PID_NOREV:
-			if (fabsf(servo_val) < 0.001) {
-				pulses_without_power++;
-			}
-
-			if (!(pulses_without_power < MIN_PULSES_WITHOUT_POWER && config.safe_start)) {
-				mc_interface_set_pid_speed(servo_val * config.pid_max_erpm);
-				send_current = true;
-			}
-			break;
-
-		default:
-			continue;
-		}
+			// end of mode switch-case
 
 		if (pulses_without_power < MIN_PULSES_WITHOUT_POWER && config.safe_start) {
 			static int pulses_without_power_before = 0;
@@ -343,141 +359,61 @@ static THD_FUNCTION(ppm_thread, arg) {
 			continue;
 		}
 
-		const float duty_now = mc_interface_get_duty_cycle_now();
-		float current_highest_abs = fabsf(mc_interface_get_tot_current_directional_filtered());
-		float duty_highest_abs = fabsf(duty_now);
+		// const float duty_now = mc_interface_get_duty_cycle_now();
+		// float current_highest_abs = fabsf(mc_interface_get_tot_current_directional_filtered());
+		// float duty_highest_abs = fabsf(duty_now);
 
-		if (config.multi_esc) {
-			for (int i = 0;i < CAN_STATUS_MSGS_TO_STORE;i++) {
-				can_status_msg *msg = comm_can_get_status_msg_index(i);
+		// if (config.ctrl_type == PPM_CTRL_TYPE_CURRENT_SMART_REV) {
+		// 	bool duty_control = false;
+		// 	static bool was_duty_control = false;
+		// 	static float duty_rev = 0.0;
 
-				if (msg->id >= 0 && UTILS_AGE_S(msg->rx_time) < MAX_CAN_AGE) {
-					if (fabsf(msg->rpm) < fabsf(rpm_lowest)) {
-						rpm_lowest = msg->rpm;
-					}
+		// 	if (servo_val < -0.92 && duty_highest_abs < (mcconf->l_min_duty * 1.5) &&
+		// 			current_highest_abs < (mcconf->l_current_max * mcconf->l_current_max_scale * 0.7)) {
+		// 		duty_control = true;
+		// 	}
 
-					if (fabsf(msg->current) > current_highest_abs) {
-						current_highest_abs = fabsf(msg->current);
-					}
+		// 	if (duty_control || (was_duty_control && servo_val < -0.1)) {
+		// 		was_duty_control = true;
 
-					if (fabsf(msg->duty) > duty_highest_abs) {
-						duty_highest_abs = fabsf(msg->duty);
-					}
-				}
-			}
-		}
+		// 		float goal = config.smart_rev_max_duty * -servo_val;
+		// 		utils_step_towards(&duty_rev, -goal,
+		// 				config.smart_rev_max_duty * dt / config.smart_rev_ramp_time);
 
-		if (config.ctrl_type == PPM_CTRL_TYPE_CURRENT_SMART_REV) {
-			bool duty_control = false;
-			static bool was_duty_control = false;
-			static float duty_rev = 0.0;
+		// 		mc_interface_set_duty(duty_rev);
 
-			if (servo_val < -0.92 && duty_highest_abs < (mcconf->l_min_duty * 1.5) &&
-					current_highest_abs < (mcconf->l_current_max * mcconf->l_current_max_scale * 0.7)) {
-				duty_control = true;
-			}
+		// 		// Send the same duty cycle to the other controllers
+		// 		if (config.multi_esc) {
+		// 			for (int i = 0;i < CAN_STATUS_MSGS_TO_STORE;i++) {
+		// 				can_status_msg *msg = comm_can_get_status_msg_index(i);
 
-			if (duty_control || (was_duty_control && servo_val < -0.1)) {
-				was_duty_control = true;
+		// 				if (msg->id >= 0 && UTILS_AGE_S(msg->rx_time) < MAX_CAN_AGE) {
+		// 					comm_can_set_duty(msg->id, duty_rev);
+		// 				}
+		// 			}
+		// 		}
 
-				float goal = config.smart_rev_max_duty * -servo_val;
-				utils_step_towards(&duty_rev, -goal,
-						config.smart_rev_max_duty * dt / config.smart_rev_ramp_time);
+		// 		current_mode = false;
+		// 	} else {
+		// 		duty_rev = duty_now;
+		// 		was_duty_control = false;
+		// 	}
+		// }
 
-				mc_interface_set_duty(duty_rev);
 
-				// Send the same duty cycle to the other controllers
-				if (config.multi_esc) {
-					for (int i = 0;i < CAN_STATUS_MSGS_TO_STORE;i++) {
-						can_status_msg *msg = comm_can_get_status_msg_index(i);
-
-						if (msg->id >= 0 && UTILS_AGE_S(msg->rx_time) < MAX_CAN_AGE) {
-							comm_can_set_duty(msg->id, duty_rev);
-						}
-					}
-				}
-
-				current_mode = false;
-			} else {
-				duty_rev = duty_now;
-				was_duty_control = false;
-			}
-		}
-
-		if ((send_current || send_duty) && config.multi_esc) {
-			float current_filtered = mc_interface_get_tot_current_directional_filtered();
-			float duty = mc_interface_get_duty_cycle_now();
-
-			for (int i = 0;i < CAN_STATUS_MSGS_TO_STORE;i++) {
-				can_status_msg *msg = comm_can_get_status_msg_index(i);
-
-				if (msg->id >= 0 && UTILS_AGE_S(msg->rx_time) < MAX_CAN_AGE) {
-					if (send_current) {
-						comm_can_set_current(msg->id, current_filtered);
-					} else if (send_duty) {
-						comm_can_set_duty(msg->id, duty);
-					}
-				}
-			}
-		}
-
+		// send current control command to motor
 		if (current_mode) {
-			if (current_mode_brake) {
-				mc_interface_set_brake_current(current);
-
-				// Send brake command to all ESCs seen recently on the CAN bus
-				for (int i = 0;i < CAN_STATUS_MSGS_TO_STORE;i++) {
-					can_status_msg *msg = comm_can_get_status_msg_index(i);
-
-					if (msg->id >= 0 && UTILS_AGE_S(msg->rx_time) < MAX_CAN_AGE) {
-						comm_can_set_current_brake(msg->id, current);
-					}
-				}
-			} else {
+			// if (current_mode_brake) {
+			// 	mc_interface_set_brake_current(current);
+			// } else {
 				float current_out = current;
 				bool is_reverse = false;
 				if (current_out < 0.0) {
 					is_reverse = true;
 					current_out = -current_out;
-					current = -current;
-					rpm_local = -rpm_local;
-					rpm_lowest = -rpm_lowest;
-				}
-
-				// Traction control
-				if (config.multi_esc) {
-					for (int i = 0;i < CAN_STATUS_MSGS_TO_STORE;i++) {
-						can_status_msg *msg = comm_can_get_status_msg_index(i);
-
-						if (msg->id >= 0 && UTILS_AGE_S(msg->rx_time) < MAX_CAN_AGE) {
-							if (config.tc) {
-								float rpm_tmp = msg->rpm;
-								if (is_reverse) {
-									rpm_tmp = -rpm_tmp;
-								}
-
-								float diff = rpm_tmp - rpm_lowest;
-								current_out = utils_map(diff, 0.0, config.tc_max_diff, current, 0.0);
-								if (current_out < mcconf->cc_min_current) {
-									current_out = 0.0;
-								}
-							}
-
-							if (is_reverse) {
-								comm_can_set_current(msg->id, -current_out);
-							} else {
-								comm_can_set_current(msg->id, current_out);
-							}
-						}
-					}
-
-					if (config.tc) {
-						float diff = rpm_local - rpm_lowest;
-						current_out = utils_map(diff, 0.0, config.tc_max_diff, current, 0.0);
-						if (current_out < mcconf->cc_min_current) {
-							current_out = 0.0;
-						}
-					}
+					//current = -current;
+					//rpm_local = -rpm_local;
+					//rpm_lowest = -rpm_lowest;
 				}
 
 				if (is_reverse) {
@@ -485,7 +421,7 @@ static THD_FUNCTION(ppm_thread, arg) {
 				} else {
 					mc_interface_set_current(current_out);
 				}
-			}
+			//}
 		}
 
 	}

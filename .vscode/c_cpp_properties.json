@@ -1,19 +1,24 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "vscode_stm32_c_cpp_properties",
+            "compilerPath": "/home/mscholz/programs/gcc-arm-none-eabi-7-2018-q2-update/bin/arm-none-eabi-gcc",
             "includePath": [
-                "${workspaceRoot}/**",
-                "${workspaceRoot}"
+                "${workspaceRoot}",
+                "${workspaceRoot}/appconf",
+                "${workspaceRoot}/applications",
+                "${workspaceRoot}/hwconf",
+                "${workspaceRoot}/compression",
+                "${workspaceRoot}/imu",
+                "${workspaceRoot}/libcanard",
+                "${workspaceRoot}/mcconf",
+                "${workspaceRoot}/nrf",
+                
             ],
-            "browse": {
-                "path": [
-                    "${workspaceRoot}/**"
-                ],
-                "limitSymbolsToIncludedHeaders": false
-            },
-            "defines": [],
-            "compilerPath": "/usr/bin/gcc",
+            "defines": [
+                "USE_HAL_DRIVER",
+                "STM32F407xx"
+            ],
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64"

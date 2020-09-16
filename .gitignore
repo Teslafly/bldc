@@ -5,3 +5,8 @@ build
 .project
 .cproject
 .settings/language.settings.xml
+*.code-workspace
+
+applications/vesc_dev_workspace.code-workspace
+.vscode/.cortex-debug.peripherals.state.json
+.vscode/.cortex-debug.registers.state.json

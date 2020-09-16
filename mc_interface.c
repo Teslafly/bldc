@@ -627,6 +627,11 @@ void mc_interface_set_pid_speed(float rpm) {
 	}
 }
 
+/**
+ * @brief 
+ * 
+ * @param pos angle from 0 - 360
+ */
 void mc_interface_set_pid_pos(float pos) {
 	SHUTDOWN_RESET();
 

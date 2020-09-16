@@ -24,7 +24,7 @@
 #define FW_VERSION_MAJOR			5
 #define FW_VERSION_MINOR			01
 // Set to 0 for building a release and iterate during beta test builds
-#define FW_TEST_VERSION_NUMBER		0
+#define FW_TEST_VERSION_NUMBER		2
 
 #include "datatypes.h"
 
@@ -63,8 +63,8 @@
 //#define HW_SOURCE "hw_49.c"
 //#define HW_HEADER "hw_49.h"
 
-//#define HW_SOURCE "hw_410.c" // Also for 4.11 and 4.12
-//#define HW_HEADER "hw_410.h" // Also for 4.11 and 4.12
+// #define HW_SOURCE "hw_410.c" // Also for 4.11 and 4.12
+// #define HW_HEADER "hw_410.h" // Also for 4.11 and 4.12
 
 // Benjamins first HW60 PCB with PB5 and PB6 swapped
 //#define HW60_VEDDER_FIRST_PCB
