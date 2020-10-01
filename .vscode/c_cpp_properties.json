@@ -12,7 +12,7 @@
                 "${workspaceRoot}/imu",
                 "${workspaceRoot}/libcanard",
                 "${workspaceRoot}/mcconf",
-                "${workspaceRoot}/nrf",
+                "${workspaceRoot}/nrf"
                 
             ],
             "defines": [
