@@ -29,6 +29,7 @@
 #include "comm_can.h"
 #include "hw.h"
 #include <math.h>
+#include "commands.h"
 
 // Only available if servo output is not active
 #if !SERVO_OUT_ENABLE
@@ -75,6 +76,8 @@ static volatile float direction_hyst = 0;
 static volatile servo_control_modes control_mode = PPM_CTRL_TYPE_NONE_SERVO;
 
 static volatile bool servo_homed = false; // for testing with no home switch
+
+static volatile float servo_per = 50.5;
 
 // Private functions
 #endif
@@ -160,8 +163,9 @@ static THD_FUNCTION(servo_thread, arg) {
 	servodec_init(servodec_func);
 	is_running = true;
 
-	bool servo_homed = false; // not homed on boot
-	//bool servo_homed = true; // for testing with no home switch
+	//bool servo_homed = false; // not homed on boot
+	bool servo_homed = true; // for testing with no home switch
+							// goes directly into position control mode
 
 	// limit switch pin
 	palSetPadMode(SERVO_LIMIT_SWITCH_IO_PORT, 
@@ -173,7 +177,7 @@ static THD_FUNCTION(servo_thread, arg) {
 
 	// Example of using the experiment plot
 	//	chThdSleepMilliseconds(8000);
-	//	commands_init_plot("Sample", "Voltage");
+	//	commands_init_plot("Sample", "Value");
 	//	commands_plot_add_graph("Temp Fet");
 	//	commands_plot_add_graph("Input Voltage");
 	//	float samp = 0.0;
@@ -188,10 +192,11 @@ static THD_FUNCTION(servo_thread, arg) {
 	//	}
 
 		// testing printout
-		chThdSleepMilliseconds(1000);
-		commands_init_plot("Sample Index", "Voltage");
-		commands_plot_add_graph("internal_servo_command");
-		float samp = 0.0;
+		// chThdSleepMilliseconds(3000);
+		// commands_init_plot("Sample", "Value");
+		// commands_plot_add_graph("Servo percent");
+		int samp = 0.0;
+		int decimation = 0;
 
 
 	for(;;) {
@@ -215,38 +220,43 @@ static THD_FUNCTION(servo_thread, arg) {
 		// Truncate the read voltage
 		utils_truncate_number(&servo_val, -1.0, 1.0);
 
-		// STICK MAPPING
-		// full stick, no middle
-		input_val = servo_val;
-		servo_val += 1.0;
-		servo_val /= 2.0;
-
-
-		// absolute input. 
-		// takes servo value of -1 to 1 and maps from 0 to 1.
-		//Mapping with respect to center pulsewidth
-		// if (servo_ms < config.pulse_center) {  // neg values
-		// 	servo_val = utils_map(servo_ms, config.pulse_start,
-		// 			config.pulse_center, 0.0, 1.0); 
-		// } else {  // pos values
-		// 	servo_val = utils_map(servo_ms, config.pulse_center,
-		// 			config.pulse_end, 0.0, 1.0);
-		// }
+		// // STICK MAPPING
+		// // full stick, no middle
 		// input_val = servo_val;
+		// servo_val += 1.0;
+		// servo_val /= 2.0;
 
 		// Apply deadband
 		utils_deadband(&servo_val, config.hyst, 1.0);
-		
-		// commands_plot_set_graph(1);
-		// commands_send_plot_points(samp, servo_val*100);
-		// samp++;
 
-		// All pins and buttons are still decoded for debugging, even
-		// when output is disabled.
-		if (app_is_output_disabled()) {
-			continue;
+		//switch (control_mode) {
+		// absolute input. 
+		// takes servo value of -1 to 1 and maps from 0 to 1.
+		// Mapping with respect to center pulsewidth
+		if (servo_ms < config.pulse_center) {  // neg values
+			servo_val = utils_map(servo_ms, config.pulse_start,
+					config.pulse_center, 1.0, 0.0); 
+		} else {  // pos values
+			servo_val = utils_map(servo_ms, config.pulse_center,
+					config.pulse_end, 0.0, 1.0);
 		}
 
+		input_val = servo_val;
+		
+
+		if (decimation  == 100){
+			//commands_plot_set_graph(0);
+			//commands_send_plot_points((float)samp, servo_percent);
+			samp += 1;
+			decimation = 0;
+			servo_per =  servo_val * 100.0;
+			//commands_printf("servo cmd: %.2f ", (double)(servo_per));
+			//commands_printf("test: %.2f ", (double)(3.14159));
+		}
+		decimation++;
+
+
+		// reset no signal counter
 		if (timeout_has_timeout() || servodec_get_time_since_update() > timeout_get_timeout_msec() ||
 				mc_interface_get_fault() != FAULT_CODE_NONE) {
 			pulses_without_power = 0;
@@ -257,50 +267,34 @@ static THD_FUNCTION(servo_thread, arg) {
 		// utils_deadband(&servo_val, config.hyst, 1.0);
 
 		// Apply throttle curve
-		servo_val = utils_throttle_curve(servo_val, config.throttle_exp, config.throttle_exp_brake, config.throttle_exp_mode);
+		//servo_val = utils_throttle_curve(servo_val, config.throttle_exp, config.throttle_exp_brake, config.throttle_exp_mode);
 
-		// Apply ramping
-		static systime_t last_time = 0;
-		static float servo_val_ramp = 0.0;
-		float ramp_time = fabsf(servo_val) > fabsf(servo_val_ramp) ? config.ramp_time_pos : config.ramp_time_neg;
+		// // Apply ramping
+		// static systime_t last_time = 0;
+		// static float servo_val_ramp = 0.0;
+		// float ramp_time = fabsf(servo_val) > fabsf(servo_val_ramp) ? config.ramp_time_pos : config.ramp_time_neg;
 
+		// const float dt = (float)ST2MS(chVTTimeElapsedSinceX(last_time)) / 1000.0;
+		// last_time = chVTGetSystemTimeX();
 
-		const float dt = (float)ST2MS(chVTTimeElapsedSinceX(last_time)) / 1000.0;
-		last_time = chVTGetSystemTimeX();
-
-		if (ramp_time > 0.01) {
-			const float ramp_step = dt / ramp_time;
-			utils_step_towards(&servo_val_ramp, servo_val, ramp_step);
-			servo_val = servo_val_ramp;
-		}
+		// if (ramp_time > 0.01) {
+		// 	const float ramp_step = dt / ramp_time;
+		// 	utils_step_towards(&servo_val_ramp, servo_val, ramp_step);
+		// 	servo_val = servo_val_ramp;
+		// }
+		// // end ramping
 
 		// at this point, servo_val has been mapped, deadbanded, and scaled.
 		// it is a value from 0 to 1.0 mapped from pulselength start to pulselength end.
 
 		float current = 0;
-		bool current_mode = false;
-		//static bool force_brake = true;
-		//static int8_t did_idle_once = 0;
-	
-		//control_mode = PPM_CTRL_TYPE_NONE_SERVO;
-
-		// custom vars
-
-
-		// custom conf:
-		// float max_revolutions = (90/360)*(50/1);  // custom. output = 90 degrees, 50:1 gearbox
-		// float min_revolutions = 0;
-		// zero offset
 
 		// custom code
-		//float rotations;
 		//rotations = mc_interface_get_tachometer_value(false) / (??);
 		//motor pole number = encoder_ratio *2
 		//revolution = motor pole number * 3
 
-		// revolution_multiplier = 
-
-		// read limit switch
+		//read limit switch
 		//bool limit_switch_input = false;
 		bool limit_switch_input = !palReadPad(
 								SERVO_LIMIT_SWITCH_IO_PORT, 
@@ -319,43 +313,28 @@ static THD_FUNCTION(servo_thread, arg) {
 		if (servo_homed == false){
 			//config.ctrl_type = PPM_CTRL_TYPE_CURRENT_NOREV;
 			control_mode = PPM_CTRL_TYPE_CURRENT_NOREV_SERVO;
-		}else{
+		} else {
 			//config.ctrl_type = PPM_CTRL_TYPE_TACH_SERVO;
 			// remap to min_revolutions / max_revolutions
 			control_mode = PPM_CTRL_TYPE_ABS_SERVO;
 		}
+		
+		// All pins and buttons are still decoded for debugging, even
+		// when output is disabled.
+		if (app_is_output_disabled()) {
+			continue;
+		}
 
-		switch (control_mode) {
-			case PPM_CTRL_TYPE_ABS_SERVO: // make this an actual type.
-				current_mode = false; 
-				mc_interface_set_pid_pos(servo_val * 360);
-				if (fabsf(servo_val) < 0.005) {  // boot input no power interlock 
-					pulses_without_power++;
-				}
-				break;
+		// if signal, increment signal present counter
+		if (fabsf(servo_val) < config.hyst) {  // boot input no power interlock 
+			pulses_without_power++;
+		}
 
-			case PPM_CTRL_TYPE_CURRENT_NOREV_SERVO:
-				current_mode = true;
-				if ((servo_val >= 0.0 && rpm_now > 0.0) || (servo_val < 0.0 && rpm_now < 0.0)) {
-					current = servo_val * mcconf->lo_current_motor_max_now;
-				} else {
-					current = servo_val * fabsf(mcconf->lo_current_motor_min_now);
-				}
-
-				if (fabsf(servo_val) < 0.005) {
-					pulses_without_power++;
-				}
-				break;
-
-
-			default:
-				continue;
-			}
-			// end of mode switch-case
-
+		// check no signal counter, brake motor if no signal.
 		if (pulses_without_power < MIN_PULSES_WITHOUT_POWER && config.safe_start) {
 			static int pulses_without_power_before = 0;
-			if (pulses_without_power == pulses_without_power_before) {
+			if (pulses_without_power
+			 == pulses_without_power_before) {
 				pulses_without_power = 0;
 			}
 			pulses_without_power_before = pulses_without_power;
@@ -363,29 +342,51 @@ static THD_FUNCTION(servo_thread, arg) {
 			continue;
 		}
 
+		// control motor
+		switch (control_mode) {
+			case PPM_CTRL_TYPE_ABS_SERVO: // make this an actual type.
+				//current_mode = false; 
+				mc_interface_set_pid_pos(servo_val * 360);
+				break;
 
-		// send current control command to motor
-		if (current_mode) {
-			// if (current_mode_brake) {
-			// 	mc_interface_set_brake_current(current);
-			// } else {
-				float current_out = current;
-				bool is_reverse = false;
-				if (current_out < 0.0) {
-					is_reverse = true;
-					current_out = -current_out;
-					//current = -current;
-					//rpm_local = -rpm_local;
-					//rpm_lowest = -rpm_lowest;
-				}
+			case PPM_CTRL_TYPE_CURRENT_NOREV_SERVO:
+				//current_mode = true;
 
-				if (is_reverse) {
-					mc_interface_set_current(current_out);
+				if ((servo_val >= 0.0 && rpm_now > 0.0) || (servo_val < 0.0 && rpm_now < 0.0)) {
+					current = servo_val * mcconf->lo_current_motor_max_now;
 				} else {
-					mc_interface_set_current(-current_out);
+					current = servo_val * fabsf(mcconf->lo_current_motor_min_now);
 				}
-			//}
+				mc_interface_set_current(current);
+				break;
+
+			default:
+				continue;
 		}
+		// end of mode switch-case
+
+		// // send current control command to motor
+		// if (current_mode) {
+		// 	// if (current_mode_brake) {
+		// 	// 	mc_interface_set_brake_current(current);
+		// 	// } else {
+		// 		float current_out = current;
+		// 		bool is_reverse = false;
+		// 		if (current_out < 0.0) {
+		// 			is_reverse = true;
+		// 			current_out = -current_out;
+		// 			//current = -current;
+		// 			//rpm_local = -rpm_local;
+		// 			//rpm_lowest = -rpm_lowest;
+		// 		}
+
+		// 		if (is_reverse) {
+		// 			mc_interface_set_current(current_out);
+		// 		} else {
+		// 			mc_interface_set_current(-current_out);
+		// 		}
+		// 	//}
+		// }
 
 	}
 }
