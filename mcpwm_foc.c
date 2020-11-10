@@ -174,6 +174,8 @@ static volatile motor_all_state_t m_motor_1;
 static volatile motor_all_state_t m_motor_2;
 #endif
 static volatile int m_isr_motor = 0;
+static volatile int motor_cumulative_revolutions;
+static volatile float pid_angle_zero_offset = 0;
 
 // Private functions
 static void do_dc_cal(void);
@@ -1323,6 +1325,8 @@ int mcpwm_foc_get_tachometer_value(bool reset) {
 
 	if (reset) {
 		motor_now()->m_tachometer = 0;
+		motor_cumulative_revolutions = 0;
+		pid_angle_zero_offset = motor_now()->m_pid_div_angle_last;
 	}
 
 	return val;
@@ -2732,6 +2736,27 @@ void mcpwm_foc_adc_int_handler(void *p, uint32_t flags) {
 	motor_now->m_tachometer_abs += abs(diff);
 
 
+	// if(true){
+	// 	static float hfi_plot_div = 0;// decimation counter
+	// 	if (hfi_plot_div == 0 && motor_now ->m_hfi_plot_sample == 0){
+	// 		// setup
+	// 		commands_init_plot("Sample", "Value");
+	// 		commands_plot_add_graph("Phase");
+	// 		static float hfi_plot_div = 0; 
+	// 		//motor->m_hfi_plot_sample = 0;
+	// 	}
+	// 	hfi_plot_div++;
+
+	// 	if (hfi_plot_div >= 8) {
+	// 		hfi_plot_div = 0;
+
+	// 		commands_plot_set_graph(0);
+	// 		commands_send_plot_points(motor_now->m_hfi_plot_sample,motor_now->m_tacho_step_last);
+	// 	}
+	// 	motor_now->m_hfi_plot_sample++;
+	// }
+		
+
 	// float enc_ang = 0;
 	// if (encoder_is_configured()) {
 	// 	if (virtual_motor_is_connected()){
@@ -2739,17 +2764,6 @@ void mcpwm_foc_adc_int_handler(void *p, uint32_t flags) {
 	// 	} else {
 	// 		enc_ang = encoder_read_deg();
 	// 	}
-
-	// 	float phase_tmp = enc_ang;
-	// 	if (conf_now->foc_encoder_inverted) {
-	// 		phase_tmp = 360.0 - phase_tmp;
-	// 	}
-	// 	phase_tmp *= conf_now->foc_encoder_ratio;
-	// 	phase_tmp -= conf_now->foc_encoder_offset;
-	// 	utils_norm_angle((float*)&phase_tmp);
-	// 	motor_now->m_phase_now_encoder = phase_tmp * (M_PI / 180.0);
-	//}
-
 
 
 	// Track position control angle
@@ -2766,37 +2780,39 @@ void mcpwm_foc_adc_int_handler(void *p, uint32_t flags) {
 		angle_now = motor_now->m_motor_state.phase * (180.0 / M_PI);
 	}
 
-	if (conf_now->p_pid_ang_div > 0.98 && conf_now->p_pid_ang_div < 1.02) {
-		// motor_now->m_pos_pid_now = angle_now;
-		motor_angle = angle_now;
-	} else {
-		// float diff_f = utils_angle_difference(angle_now, motor_now->m_pid_div_angle_last);
-		// motor_now->m_pid_div_angle_last = angle_now;
-		// motor_now->m_pos_pid_now += diff_f / conf_now->p_pid_ang_div;
-		//utils_norm_angle((float*)&motor_now->m_pos_pid_now);
-
-		// absolute difference
-		// use m_tachometer and foc_encoder_ratio & to verify # of revolutions?
-			// 	phase_tmp *= conf_now->foc_encoder_ratio;
-			// 	phase_tmp -= conf_now->foc_encoder_offset;
-
-		// is just basing on tachometer high enough resolution for pid loop?
-		motor_angle = ((motor_now->m_tachometer)* (360/2))/(conf_now->foc_encoder_ratio); // get absolute # of motor revolutions
-		motor_angle = (motor_angle) / (conf_now->p_pid_ang_div); // convert revolutions into current effective angle
-		// motor_now->m_pos_pid_now = motor_angle;
-
-		// 	motor_angle = angle_now + motor_revolutions *360
-
-		if (conf_now->foc_encoder_inverted){// tachometer always in same direction. 
-			motor_angle = -motor_angle;
-		}
+	// angle now ranges from 0 to 360 degrees
+	// update if the motor made a revolution
+	if ((angle_now > 300) & (motor_now->m_pid_div_angle_last < 60)) {
+		motor_cumulative_revolutions -= 1;
 	}
+	if ((angle_now < 60) & (motor_now->m_pid_div_angle_last > 300)) {
+		motor_cumulative_revolutions += 1;
+	}
+	motor_now->m_pid_div_angle_last = angle_now; // save previous angle
+
+	// old multi angle
+	// float diff_f = utils_angle_difference(angle_now, motor_now->m_pid_div_angle_last);
+	// motor_now->m_pid_div_angle_last = angle_now;
+	// motor_now->m_pos_pid_now += diff_f / conf_now->p_pid_ang_div;
+	// utils_norm_angle((float*)&motor_now->m_pos_pid_now);
+
+	//motor_angle = (motor_cumulative_revolutions * 360) + (angle_now); // removed offset for testing
+	motor_angle = (motor_cumulative_revolutions * 360) + (angle_now - pid_angle_zero_offset);
+	motor_angle = (motor_angle) / (conf_now->p_pid_ang_div);
+	//motor_angle = (motor_cumulative_revolutions * 360) + (motor_now->m_motor_state.phase * (360 / 2*M_PI));
+	//motor_angle = (motor_angle) / (conf_now->foc_encoder_ratio * conf_now->p_pid_ang_div); // convert revolutions into current effective angle
+	//motor_angle -= pid_angle_zero_offset; //take off offset
+	// motor_now->m_pos_pid_now = motor_angle;
+
+	//UTILS_LP_FAST(motor_now->m_pos_pid_now, motor_angle, 0.01); // use filter instead
+	motor_now->m_pos_pid_now = motor_angle; 
+	//motor_now->m_pos_pid_now = motor_now->m_pos_pid_set; // testing input angle
 
 	// Run position control
 	if (motor_now->m_state == MC_STATE_RUNNING) {
 		run_pid_control_pos(motor_angle, motor_now->m_pos_pid_set, dt, motor_now);
 	}
-	motor_now->m_pos_pid_now = motor_angle;
+
 
 #ifdef AD2S1205_SAMPLE_GPIO
 	// Release sample in the AD2S1205 resolver IC.
