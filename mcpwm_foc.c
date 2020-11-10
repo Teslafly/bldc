@@ -2755,16 +2755,7 @@ void mcpwm_foc_adc_int_handler(void *p, uint32_t flags) {
 	// 	}
 	// 	motor_now->m_hfi_plot_sample++;
 	// }
-		
-
-	// float enc_ang = 0;
-	// if (encoder_is_configured()) {
-	// 	if (virtual_motor_is_connected()){
-	// 		enc_ang = virtual_motor_get_angle_deg();
-	// 	} else {
-	// 		enc_ang = encoder_read_deg();
-	// 	}
-
+	
 
 	// Track position control angle
 	// TODO: Have another look at this.
@@ -2790,19 +2781,8 @@ void mcpwm_foc_adc_int_handler(void *p, uint32_t flags) {
 	}
 	motor_now->m_pid_div_angle_last = angle_now; // save previous angle
 
-	// old multi angle
-	// float diff_f = utils_angle_difference(angle_now, motor_now->m_pid_div_angle_last);
-	// motor_now->m_pid_div_angle_last = angle_now;
-	// motor_now->m_pos_pid_now += diff_f / conf_now->p_pid_ang_div;
-	// utils_norm_angle((float*)&motor_now->m_pos_pid_now);
-
-	//motor_angle = (motor_cumulative_revolutions * 360) + (angle_now); // removed offset for testing
 	motor_angle = (motor_cumulative_revolutions * 360) + (angle_now - pid_angle_zero_offset);
 	motor_angle = (motor_angle) / (conf_now->p_pid_ang_div);
-	//motor_angle = (motor_cumulative_revolutions * 360) + (motor_now->m_motor_state.phase * (360 / 2*M_PI));
-	//motor_angle = (motor_angle) / (conf_now->foc_encoder_ratio * conf_now->p_pid_ang_div); // convert revolutions into current effective angle
-	//motor_angle -= pid_angle_zero_offset; //take off offset
-	// motor_now->m_pos_pid_now = motor_angle;
 
 	//UTILS_LP_FAST(motor_now->m_pos_pid_now, motor_angle, 0.01); // use filter instead
 	motor_now->m_pos_pid_now = motor_angle; 

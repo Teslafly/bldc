@@ -242,9 +242,6 @@ static THD_FUNCTION(servo_thread, arg) {
 		}
 
 		input_val = servo_val;
-		
-
-
 
 		// reset no signal counter
 		if (timeout_has_timeout() || servodec_get_time_since_update() > timeout_get_timeout_msec() ||
@@ -280,12 +277,8 @@ static THD_FUNCTION(servo_thread, arg) {
 		float current = 0;
 
 		// custom code
-		//rotations = mc_interface_get_tachometer_value(false) / (??);
-		//motor pole number = encoder_ratio *2
-		//revolution = motor pole number * 3
 
 		//read limit switch
-		//bool limit_switch_input = false;
 		bool limit_switch_input = !palReadPad(
 								SERVO_LIMIT_SWITCH_IO_PORT, 
 								SERVO_LIMIT_SWITCH_IO_PIN);
@@ -301,11 +294,8 @@ static THD_FUNCTION(servo_thread, arg) {
 		// if not homed, go into current mode control
 		// if homed, go into absolute servo control.
 		if (servo_homed == false){
-			//config.ctrl_type = PPM_CTRL_TYPE_CURRENT_NOREV;
 			control_mode = PPM_CTRL_TYPE_CURRENT_NOREV_SERVO;
 		} else {
-			//config.ctrl_type = PPM_CTRL_TYPE_TACH_SERVO;
-			// remap to min_revolutions / max_revolutions
 			control_mode = PPM_CTRL_TYPE_ABS_SERVO;
 		}
 		
@@ -335,13 +325,10 @@ static THD_FUNCTION(servo_thread, arg) {
 		// control motor
 		switch (control_mode) {
 			case PPM_CTRL_TYPE_ABS_SERVO: // make this an actual type.
-				//current_mode = false; 
 				mc_interface_set_pid_pos(servo_val * 360);
 				break;
 
 			case PPM_CTRL_TYPE_CURRENT_NOREV_SERVO:
-				//current_mode = true;
-
 				if ((servo_val >= 0.0 && rpm_now > 0.0) || (servo_val < 0.0 && rpm_now < 0.0)) {
 					current = servo_val * mcconf->lo_current_motor_max_now;
 				} else {
@@ -354,29 +341,6 @@ static THD_FUNCTION(servo_thread, arg) {
 				continue;
 		}
 		// end of mode switch-case
-
-		// // send current control command to motor
-		// if (current_mode) {
-		// 	// if (current_mode_brake) {
-		// 	// 	mc_interface_set_brake_current(current);
-		// 	// } else {
-		// 		float current_out = current;
-		// 		bool is_reverse = false;
-		// 		if (current_out < 0.0) {
-		// 			is_reverse = true;
-		// 			current_out = -current_out;
-		// 			//current = -current;
-		// 			//rpm_local = -rpm_local;
-		// 			//rpm_lowest = -rpm_lowest;
-		// 		}
-
-		// 		if (is_reverse) {
-		// 			mc_interface_set_current(current_out);
-		// 		} else {
-		// 			mc_interface_set_current(-current_out);
-		// 		}
-		// 	//}
-		// }
 
 	}
 }
