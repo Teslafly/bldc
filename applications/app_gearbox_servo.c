@@ -244,16 +244,6 @@ static THD_FUNCTION(servo_thread, arg) {
 		input_val = servo_val;
 		
 
-		if (decimation  == 100){
-			//commands_plot_set_graph(0);
-			//commands_send_plot_points((float)samp, servo_percent);
-			samp += 1;
-			decimation = 0;
-			servo_per =  servo_val * 100.0;
-			//commands_printf("servo cmd: %.2f ", (double)(servo_per));
-			//commands_printf("test: %.2f ", (double)(3.14159));
-		}
-		decimation++;
 
 
 		// reset no signal counter
@@ -266,23 +256,23 @@ static THD_FUNCTION(servo_thread, arg) {
 		// // Apply deadband
 		// utils_deadband(&servo_val, config.hyst, 1.0);
 
-		// Apply throttle curve
-		//servo_val = utils_throttle_curve(servo_val, config.throttle_exp, config.throttle_exp_brake, config.throttle_exp_mode);
+		//Apply throttle curve
+		servo_val = utils_throttle_curve(servo_val, config.throttle_exp, config.throttle_exp_brake, config.throttle_exp_mode);
 
-		// // Apply ramping
-		// static systime_t last_time = 0;
-		// static float servo_val_ramp = 0.0;
-		// float ramp_time = fabsf(servo_val) > fabsf(servo_val_ramp) ? config.ramp_time_pos : config.ramp_time_neg;
+		// Apply ramping
+		static systime_t last_time = 0;
+		static float servo_val_ramp = 0.0;
+		float ramp_time = fabsf(servo_val) > fabsf(servo_val_ramp) ? config.ramp_time_pos : config.ramp_time_neg;
 
-		// const float dt = (float)ST2MS(chVTTimeElapsedSinceX(last_time)) / 1000.0;
-		// last_time = chVTGetSystemTimeX();
+		const float dt = (float)ST2MS(chVTTimeElapsedSinceX(last_time)) / 1000.0;
+		last_time = chVTGetSystemTimeX();
 
-		// if (ramp_time > 0.01) {
-		// 	const float ramp_step = dt / ramp_time;
-		// 	utils_step_towards(&servo_val_ramp, servo_val, ramp_step);
-		// 	servo_val = servo_val_ramp;
-		// }
-		// // end ramping
+		if (ramp_time > 0.01) {
+			const float ramp_step = dt / ramp_time;
+			utils_step_towards(&servo_val_ramp, servo_val, ramp_step);
+			servo_val = servo_val_ramp;
+		}
+		// end ramping
 
 		// at this point, servo_val has been mapped, deadbanded, and scaled.
 		// it is a value from 0 to 1.0 mapped from pulselength start to pulselength end.

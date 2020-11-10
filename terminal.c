@@ -837,7 +837,11 @@ void terminal_process_string(char *str) {
 	} else if (strcmp(argv[0], "encoder_clear_multiturn") == 0) {
 		encoder_ts57n8501_reset_multiturn();
 		commands_printf("Done!\n");
-	} else if (strcmp(argv[0], "uptime") == 0) {
+	} else if (strcmp(argv[0], "pid_offset_reset") == 0) {
+		mc_interface_get_tachometer_value(true);
+		commands_printf("Done!\n");
+	}
+	else if (strcmp(argv[0], "uptime") == 0) {
 		commands_printf("Uptime: %.2f s\n", (double)chVTGetSystemTimeX() / (double)CH_CFG_ST_FREQUENCY);
 	} else if (strcmp(argv[0], "hall_analyze") == 0) {
 		if (argc == 2) {
@@ -1078,6 +1082,10 @@ void terminal_process_string(char *str) {
 
 		commands_printf("encoder_clear_multiturn");
 		commands_printf("  Clear multiturn counter of the TS5700N8501 encoder.)");
+
+		
+		commands_printf("pid_offset_reset");
+		commands_printf("  reset pid angle offset to 0)");
 
 		commands_printf("uptime");
 		commands_printf("  Prints how many seconds have passed since boot.");
