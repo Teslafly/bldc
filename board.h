@@ -36,9 +36,9 @@
 #define STM32_LSECLK                0U
 #endif
 
-#if !defined(STM32_HSECLK)
-#define STM32_HSECLK                8000000U
-#endif
+// #if !defined(STM32_HSECLK)
+// #define STM32_HSECLK                8000000U
+// #endif
 
 /*
  * Board voltages.
