@@ -17,40 +17,52 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
 
-#ifndef HW_100_500_H_
-#define HW_100_500_H_
+#ifndef HW_MOXIE_DRIVE_24_H_
+#define HW_MOXIE_DRIVE_24_H_
 
-#define HW_NAME					"100_500"
+#define HW_NAME				"Moxie_24"
 
 // HW properties
 #define HW_HAS_3_SHUNTS
-#define INVERTED_SHUNT_POLARITY
+// #define INVERTED_SHUNT_POLARITY  // not sure
 #define HW_HAS_PHASE_FILTERS
 
+#define HW_USE_25MHZ_XTAL  // 25mhz vs usual 8mhz mcu crystal
+
+
+
 // Macros
-#define LED_GREEN_GPIO			GPIOB
-#define LED_GREEN_PIN			5
-#define LED_RED_GPIO			GPIOB
-#define LED_RED_PIN				7
+#define LED_GREEN_GPIO			GPIOA
+#define LED_GREEN_PIN			15
+#define LED_RED_GPIO			GPIOD
+#define LED_RED_PIN				2
+// checked
 
 #define LED_GREEN_ON()			palSetPad(LED_GREEN_GPIO, LED_GREEN_PIN)
 #define LED_GREEN_OFF()			palClearPad(LED_GREEN_GPIO, LED_GREEN_PIN)
 #define LED_RED_ON()			palSetPad(LED_RED_GPIO, LED_RED_PIN)
 #define LED_RED_OFF()			palClearPad(LED_RED_GPIO, LED_RED_PIN)
 
-#define PHASE_FILTER_GPIO		GPIOC
-#define PHASE_FILTER_PIN		9
+#define PHASE_FILTER_GPIO		GPIOB
+#define PHASE_FILTER_PIN		12
 #define PHASE_FILTER_ON()		palSetPad(PHASE_FILTER_GPIO, PHASE_FILTER_PIN)
 #define PHASE_FILTER_OFF()		palClearPad(PHASE_FILTER_GPIO, PHASE_FILTER_PIN)
+// checked
 
-#define AUX_GPIO				GPIOC
-#define AUX_PIN					12
+#define AUX_GPIO				GPIOA
+#define AUX_PIN					6
+#define AUX2_GPIO				GPIOA
+#define AUX2_PIN				7
 #define AUX_ON()				palSetPad(AUX_GPIO, AUX_PIN)
 #define AUX_OFF()				palClearPad(AUX_GPIO, AUX_PIN)
+// checked
+
+// pwm phase out pins checked
 
 /*
  * ADC Vector
  *
+ * DMA order|(adc)|adc mux in|signal name
  * 0  (1):	IN0		SENS1
  * 1  (2):	IN1		SENS2
  * 2  (3):	IN2		SENS3
@@ -96,19 +108,19 @@
 
 // Component parameters (can be overridden)
 #ifndef V_REG
-#define V_REG					3.44
+#define V_REG					3.3
 #endif
 #ifndef VIN_R1
-#define VIN_R1					220000.0
+#define VIN_R1					47000.0
 #endif
 #ifndef VIN_R2
-#define VIN_R2					4700.0
+#define VIN_R2					2200.0
 #endif
 #ifndef CURRENT_AMP_GAIN
-#define CURRENT_AMP_GAIN		20.0
+#define CURRENT_AMP_GAIN		10.0 // fix
 #endif
 #ifndef CURRENT_SHUNT_RES
-#define CURRENT_SHUNT_RES		(0.0005 / 4.0)
+#define CURRENT_SHUNT_RES		1 // hall sensor
 #endif
 
 // Input voltage
@@ -133,6 +145,12 @@
 #define HW_ADC_EXT_PIN			5
 #define HW_ADC_EXT2_GPIO		GPIOA
 #define HW_ADC_EXT2_PIN			6
+// fixme
+// //new
+// #define HW_ADC_EXT_GPIO			GPIOA // throttle
+// #define HW_ADC_EXT_PIN			4
+// #define HW_ADC_EXT2_GPIO		GPIOA  // regen
+// #define HW_ADC_EXT2_PIN			5
 
 // UART Peripheral
 #define HW_UART_DEV				SD3
@@ -141,6 +159,12 @@
 #define HW_UART_TX_PIN			10
 #define HW_UART_RX_PORT			GPIOB
 #define HW_UART_RX_PIN			11
+// fixme
+// //new
+// #define HW_UART_TX_PORT			GPIOB
+// #define HW_UART_TX_PIN			6
+// #define HW_UART_RX_PORT			GPIOB
+// #define HW_UART_RX_PIN			7
 
 // Permanent UART Peripheral (for NRF52)
 #define HW_UART_P_BAUD			115200
@@ -150,6 +174,16 @@
 #define HW_UART_P_TX_PIN		10
 #define HW_UART_P_RX_PORT		GPIOC
 #define HW_UART_P_RX_PIN		11
+// checked
+
+// NRF SWD
+// for WT51822 module, use "BLE-Xtal:16M RX:1 TX:2 LED:3" firmware
+#define NRF5x_SWDIO_GPIO		GPIOC
+#define NRF5x_SWDIO_PIN			9
+#define NRF5x_SWCLK_GPIO		GPIOB
+#define NRF5x_SWCLK_PIN			2
+// checked
+
 
 // ICU Peripheral for servo decoding
 #define HW_USE_SERVO_TIM4
@@ -160,6 +194,7 @@
 #define HW_ICU_GPIO_AF			GPIO_AF_TIM4
 #define HW_ICU_GPIO				GPIOB
 #define HW_ICU_PIN				6
+// fixme
 
 // I2C Peripheral
 #define HW_I2C_DEV				I2CD2
@@ -168,6 +203,7 @@
 #define HW_I2C_SCL_PIN			10
 #define HW_I2C_SDA_PORT			GPIOB
 #define HW_I2C_SDA_PIN			11
+// checked
 
 // Hall/encoder pins
 #define HW_HALL_ENC_GPIO1		GPIOC
@@ -186,6 +222,7 @@
 #define HW_ENC_EXTI_ISR_VEC		EXTI9_5_IRQHandler
 #define HW_ENC_TIM_ISR_CH		TIM3_IRQn
 #define HW_ENC_TIM_ISR_VEC		TIM3_IRQHandler
+// checked
 
 // SPI pins
 #define HW_SPI_DEV				SPID1
@@ -199,12 +236,6 @@
 #define HW_SPI_PORT_MISO		GPIOA
 #define HW_SPI_PIN_MISO			6
 
-// NRF SWD
-#define NRF5x_SWDIO_GPIO		GPIOA
-#define NRF5x_SWDIO_PIN			15
-#define NRF5x_SWCLK_GPIO		GPIOB
-#define NRF5x_SWCLK_PIN			3
-
 // Measurement macros
 #define ADC_V_L1				ADC_Value[ADC_IND_SENS1]
 #define ADC_V_L2				ADC_Value[ADC_IND_SENS2]
@@ -217,45 +248,46 @@
 #define READ_HALL3()			palReadPad(HW_HALL_ENC_GPIO3, HW_HALL_ENC_PIN3)
 
 // Override dead time. See the stm32f4 reference manual for calculating this value.
+// measure this on moxxie drive!
 #define HW_DEAD_TIME_NSEC		660.0
 
 // Default setting overrides
 #ifndef MCCONF_L_MIN_VOLTAGE
-#define MCCONF_L_MIN_VOLTAGE			12.0		// Minimum input voltage
+#define MCCONF_L_MIN_VOLTAGE			11.0		// Minimum input voltage
 #endif
 #ifndef MCCONF_L_MAX_VOLTAGE
-#define MCCONF_L_MAX_VOLTAGE			96.0		// Maximum input voltage
+#define MCCONF_L_MAX_VOLTAGE			70.0		// Maximum input voltage
 #endif
 #ifndef MCCONF_DEFAULT_MOTOR_TYPE
 #define MCCONF_DEFAULT_MOTOR_TYPE		MOTOR_TYPE_FOC
 #endif
 #ifndef MCCONF_FOC_F_SW
-#define MCCONF_FOC_F_SW					30000.0
+#define MCCONF_FOC_F_SW					20000.0
 #endif
 #ifndef MCCONF_L_MAX_ABS_CURRENT
-#define MCCONF_L_MAX_ABS_CURRENT		650.0	// The maximum absolute current above which a fault is generated
+#define MCCONF_L_MAX_ABS_CURRENT		100.0	// The maximum absolute current above which a fault is generated
 #endif
 #ifndef MCCONF_FOC_SAMPLE_V0_V7
 #define MCCONF_FOC_SAMPLE_V0_V7			false	// Run control loop in both v0 and v7 (requires phase shunts)
 #endif
 #ifndef MCCONF_L_IN_CURRENT_MAX
-#define MCCONF_L_IN_CURRENT_MAX			250.0	// Input current limit in Amperes (Upper)
+#define MCCONF_L_IN_CURRENT_MAX			60.0	// Input current limit in Amperes (Upper)
 #endif
 #ifndef MCCONF_L_IN_CURRENT_MIN
-#define MCCONF_L_IN_CURRENT_MIN			-200.0	// Input current limit in Amperes (Lower)
+#define MCCONF_L_IN_CURRENT_MIN			-50.0	// Input current limit in Amperes (Lower)
 #endif
 
 // Setting limits
-#define HW_LIM_CURRENT			-500.0, 500.0
-#define HW_LIM_CURRENT_IN		-500.0, 500.0
-#define HW_LIM_CURRENT_ABS		0.0, 650.0
-#define HW_LIM_VIN				11.0, 96.0
-#define HW_LIM_ERPM				-200e3, 200e3
+#define HW_LIM_CURRENT			-100.0, 100.0
+#define HW_LIM_CURRENT_IN		-100.0, 100.0
+#define HW_LIM_CURRENT_ABS		0.0, 150.0
+#define HW_LIM_VIN				11.0, 70.0
+#define HW_LIM_ERPM				-100e3, 100e3
 #define HW_LIM_DUTY_MIN			0.0, 0.1
 #define HW_LIM_DUTY_MAX			0.0, 0.99
-#define HW_LIM_TEMP_FET			-40.0, 110.0
+#define HW_LIM_TEMP_FET			-40.0, 90.0
 
 // HW-specific functions
-float hw100_500_get_temp(void);
+// float hw100_500_get_temp(void);
 
 #endif /* HW_100_500_H_ */
