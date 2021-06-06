@@ -97,32 +97,47 @@
 // pwm phase out pins checked
 
 /*
- * ADC Vector
+non volt/curtrent adc channels
+// vbus
+// GDRV VSENSE
+// fet temp
+// motor temp
+
+// ext1 / throttle
+// ext2 / regen
+// ext3 / cruise sw
+
+*/
+
+/*
+ * ADC Vector moxie24
+ *  all in#/names correct. apply to correct index
  *
- * DMA order|(adc)|adc mux in|signal name
- * 0  (1):	IN0		SENS1
- * 1  (2):	IN1		SENS2
- * 2  (3):	IN2		SENS3
- * 3  (1):	IN10	CURR1
- * 4  (2):	IN11	CURR2
- * 5  (3):	IN12	CURR3
- * 6  (1):	IN5		ADC_EXT1
- * 7  (2):	IN6		ADC_EXT2
- * 8  (3):	IN3		TEMP_MOS
- * 9  (1):	IN14	TEMP_MOTOR
- * 10 (2):	IN15	ADC_EXT3
- * 11 (3):	IN13	AN_IN
- * 12 (1):	Vrefint
- * 13 (2):	IN0		SENS1
- * 14 (3):	IN1		SENS2
- * 15 (1):  IN8		TEMP_MOS_2
- * 16 (2):  IN9		TEMP_MOS_3
- * 17 (3):  IN3		SENS3
+ * DMA order|(adc)|adc mux in|signal name|verified (y)
+ * 0  (1):	IN10	SENS1 y
+ * 1  (2):	IN11	SENS2 y
+ * 2  (3):	IN12	SENS3 y
+ * 3  (1):	IN0 	CURR1 y
+ * 4  (2):	IN1 	CURR2 y
+ * 5  (3):	IN2 	CURR3 y
+ *   
+ * 6  (1):	IN4		ADC_EXT1
+ * 7  (2):	IN5		ADC_EXT2
+ * 8  (3):	IN13	AN_IN 
+ * 9  (1):	IN9		TEMP_PCB
+ * 10 (2):	IN15	TEMP_MOTOR
+ * 11 (3):	Vrefint 
+ * 12 (1):	IN8		V_GATE_DRIVER 
+ * 13 (2):	IN14	ADC_EXT3, otherwise reverse button or servo 
+ * 
+ * 13 (X):	IN10	SENS1
+ * 14 (X):	IN11	SENS2
+ * 17 (X):  IN13	SENS3
  */
 
-#define HW_ADC_CHANNELS			18
+#define HW_ADC_CHANNELS			15
 #define HW_ADC_INJ_CHANNELS		3
-#define HW_ADC_NBR_CONV			6
+#define HW_ADC_NBR_CONV			5
 
 // ADC Indexes
 #define ADC_IND_SENS1			0
@@ -131,16 +146,17 @@
 #define ADC_IND_CURR1			3
 #define ADC_IND_CURR2			4
 #define ADC_IND_CURR3			5
-#define ADC_IND_VIN_SENS		11
+
+#define ADC_IND_VIN_SENS		8
 #define ADC_IND_EXT				6
 #define ADC_IND_EXT2			7
-#define ADC_IND_EXT3			10
-#define ADC_IND_TEMP_MOS		8
-#define ADC_IND_TEMP_MOS_2		15
-#define ADC_IND_TEMP_MOS_3		16
-#define ADC_IND_TEMP_MOTOR		9
-#define ADC_IND_VREFINT			12
-// #define ADC_IND_SHUTDOWN		10
+#define ADC_IND_EXT3			13
+#define ADC_IND_SHUTDOWN		13 // ext3
+#define ADC_IND_TEMP_MOS		9
+#define ADC_IND_TEMP_MOTOR		10
+#define ADC_IND_VREFINT			11
+#define ADC_IND_VOUT_GATE_DRV	12
+
 
 // ADC macros and settings
 
@@ -192,11 +208,12 @@
 
 
 // ADC GPIOs
+// these pins are also capable of dac out.
 #define HW_ADC_EXT_GPIO			GPIOA  // throttle
 #define HW_ADC_EXT_PIN			4
 #define HW_ADC_EXT2_GPIO		GPIOA  // regen
 #define HW_ADC_EXT2_PIN			5
-// fixme -- check definitaions. pins now correctl.
+// fixme -- check definitaions. pins now correct, but adc broke.
 
 // add this functionality
 // #if defined(ADDITIONAL_CONTROL_PINS )
