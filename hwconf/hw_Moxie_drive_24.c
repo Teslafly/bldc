@@ -22,6 +22,7 @@
 #include "stm32f4xx_conf.h"
 #include "utils.h"
 #include <math.h>
+#include "terminal.h"
 #include "mc_interface.h"
 
 // Variables
@@ -104,6 +105,23 @@ void hw_init_gpio(void) {
 	palSetPadMode(GPIOC, 3, PAL_MODE_INPUT_ANALOG);
 	palSetPadMode(GPIOC, 4, PAL_MODE_INPUT_ANALOG);
 	palSetPadMode(GPIOC, 5, PAL_MODE_INPUT_ANALOG);
+
+#if defined(ENABLE_SHUTDOWN_SWITCH)
+	static void terminal_shutdown_now(int argc, const char **argv);
+	static void terminal_button_test(int argc, const char **argv);
+
+	terminal_register_command_callback(
+		"shutdown",
+		"Shutdown VESC now.",
+		0,
+		terminal_shutdown_now);
+
+	terminal_register_command_callback(
+		"test_button",
+		"Try sampling the shutdown button",
+		0,
+		terminal_button_test);
+#endif
 }
 
 void hw_setup_adc_channels(void) {
@@ -237,19 +255,43 @@ void hw_try_restore_i2c(void) {
 	}
 }
 
-float hw100_500_get_temp(void) {
-	float t1 = (1.0 / ((logf(NTC_RES(ADC_Value[ADC_IND_TEMP_MOS]) / 10000.0) / 3380.0) + (1.0 / 298.15)) - 273.15);
-	float t2 = (1.0 / ((logf(NTC_RES(ADC_Value[ADC_IND_TEMP_MOS_2]) / 10000.0) / 3380.0) + (1.0 / 298.15)) - 273.15);
-	float t3 = (1.0 / ((logf(NTC_RES(ADC_Value[ADC_IND_TEMP_MOS_3]) / 10000.0) / 3380.0) + (1.0 / 298.15)) - 273.15);
-	float res = 0.0;
+#if defined(ENABLE_SHUTDOWN_SWITCH)
+bool hw_sample_shutdown_button(void) {
+	chMtxLock(&shutdown_mutex);
 
-	if (t1 > t2 && t1 > t3) {
-		res = t1;
-	} else if (t2 > t1 && t2 > t3) {
-		res = t2;
-	} else {
-		res = t3;
+	bt_diff = 0.0;
+
+	for (int i = 0;i < 3;i++) {
+		palSetPadMode(HW_SHUTDOWN_GPIO, HW_SHUTDOWN_PIN, PAL_MODE_INPUT_ANALOG);
+		chThdSleep(5);
+		float val1 = ADC_VOLTS(ADC_IND_SHUTDOWN);
+		chThdSleepMilliseconds(1);
+		float val2 = ADC_VOLTS(ADC_IND_SHUTDOWN);
+		palSetPadMode(HW_SHUTDOWN_GPIO, HW_SHUTDOWN_PIN, PAL_MODE_OUTPUT_PUSHPULL);
+		chThdSleepMilliseconds(1);
+
+		bt_diff += (val1 - val2);
 	}
 
-	return res;
+	chMtxUnlock(&shutdown_mutex);
+
+	return (bt_diff > 0.12);
 }
+
+static void terminal_shutdown_now(int argc, const char **argv) {
+	(void)argc;
+	(void)argv;
+	DISABLE_GATE();
+	HW_SHUTDOWN_HOLD_OFF();
+}
+
+static void terminal_button_test(int argc, const char **argv) {
+	(void)argc;
+	(void)argv;
+
+	for (int i = 0;i < 40;i++) {
+		commands_printf("BT: %d %.2f", HW_SAMPLE_SHUTDOWN(), (double)bt_diff);
+		chThdSleepMilliseconds(100);
+	}
+}
+#endif

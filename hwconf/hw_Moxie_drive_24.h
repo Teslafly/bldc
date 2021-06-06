@@ -29,7 +29,25 @@
 
 #define HW_USE_25MHZ_XTAL  // 25mhz vs usual 8mhz mcu crystal
 
+// throws out the standard vesc pinout. 
+// adds specific pins for cruise/brake/reverse instead of repurposing.
+// the interface pins are otherwise unaffected.
+#define ADDITIONAL_CONTROL_PINS 
 
+// #define ENABLE_SHUTDOWN_SWITCH           
+
+
+// todo:
+// - fix adc mappings, mainly swap current and voltage inputs
+// - add rev/brake sw pin mappings
+// - remap servo
+// - remap main serial
+// - check ws2812 oputput pin.
+// - fix current sensor scaling for 100a and 150a hall sensors.
+// - add pwm control of 2 auxilary outputs. (8 bit, 0-255 is fine)
+// - copy 12v intermediate bus sensing from axiom.
+// - copy power switch code from hw 60
+// - check can functionality (same pins as vesc6)
 
 // Macros
 #define LED_GREEN_GPIO			GPIOA
@@ -56,6 +74,25 @@
 #define AUX_ON()				palSetPad(AUX_GPIO, AUX_PIN)
 #define AUX_OFF()				palClearPad(AUX_GPIO, AUX_PIN)
 // checked
+
+#if defined(ENABLE_SHUTDOWN_SWITCH)
+// Shutdown pin
+// sw_en = PB5 
+// sw_sns = PC15
+#define HW_SHUTDOWN_GPIO		GPIOB
+#define HW_SHUTDOWN_PIN			5
+#define HW_SHUTDOWN_HOLD_ON()	palSetPad(HW_SHUTDOWN_GPIO, HW_SHUTDOWN_PIN)
+#define HW_SHUTDOWN_HOLD_OFF()	palClearPad(HW_SHUTDOWN_GPIO, HW_SHUTDOWN_PIN)
+#define HW_SAMPLE_SHUTDOWN()	hw_sample_shutdown_button()
+
+// Hold shutdown pin early to wake up on short pulses
+#define HW_EARLY_INIT()			palSetPadMode(HW_SHUTDOWN_GPIO, HW_SHUTDOWN_PIN, PAL_MODE_OUTPUT_PUSHPULL); \
+								HW_SHUTDOWN_HOLD_ON(); \
+								palSetPadMode(GPIOD, 2, \
+								PAL_MODE_OUTPUT_PUSHPULL | \
+								PAL_STM32_OSPEED_HIGHEST); \
+								CURRENT_FILTER_ON()
+#endif
 
 // pwm phase out pins checked
 
@@ -103,6 +140,7 @@
 #define ADC_IND_TEMP_MOS_3		16
 #define ADC_IND_TEMP_MOTOR		9
 #define ADC_IND_VREFINT			12
+// #define ADC_IND_SHUTDOWN		10
 
 // ADC macros and settings
 
@@ -117,54 +155,63 @@
 #define VIN_R2					2200.0
 #endif
 #ifndef CURRENT_AMP_GAIN
-#define CURRENT_AMP_GAIN		10.0 // fix
+#define CURRENT_AMP_GAIN		0.0 // fix
 #endif
 #ifndef CURRENT_SHUNT_RES
 #define CURRENT_SHUNT_RES		1 // hall sensor
 #endif
 
 // Input voltage
-#define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * ((VIN_R1 + VIN_R2) / VIN_R2))
+// #define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * ((VIN_R1 + VIN_R2) / VIN_R2))
+#define GET_INPUT_VOLTAGE()	 24
+
 
 // NTC Termistors
 #define NTC_RES(adc_val)		((4095.0 * 10000.0) / adc_val - 10000.0)
-#define NTC_TEMP(adc_ind)		hw100_500_get_temp()
+// #define NTC_TEMP(adc_ind)		(1.0 / ((logf(NTC_RES(ADC_Value[adc_ind]) / 10000.0) / 3434.0) + (1.0 / 298.15)) - 273.15)
+#define NTC_TEMP(adc_ind)		35 // testing
 
 #define NTC_RES_MOTOR(adc_val)	(10000.0 / ((4095.0 / (float)adc_val) - 1.0)) // Motor temp sensor on low side
 #define NTC_TEMP_MOTOR(beta)	(1.0 / ((logf(NTC_RES_MOTOR(ADC_Value[ADC_IND_TEMP_MOTOR]) / 10000.0) / beta) + (1.0 / 298.15)) - 273.15)
 
-#define NTC_TEMP_MOS1()			(1.0 / ((logf(NTC_RES(ADC_Value[ADC_IND_TEMP_MOS]) / 10000.0) / 3380.0) + (1.0 / 298.15)) - 273.15)
-#define NTC_TEMP_MOS2()			(1.0 / ((logf(NTC_RES(ADC_Value[ADC_IND_TEMP_MOS_2]) / 10000.0) / 3380.0) + (1.0 / 298.15)) - 273.15)
-#define NTC_TEMP_MOS3()			(1.0 / ((logf(NTC_RES(ADC_Value[ADC_IND_TEMP_MOS_3]) / 10000.0) / 3380.0) + (1.0 / 298.15)) - 273.15)
 
 // Voltage on ADC channel
 #define ADC_VOLTS(ch)			((float)ADC_Value[ch] / 4096.0 * V_REG)
 
-// COMM-port ADC GPIOs
-#define HW_ADC_EXT_GPIO			GPIOA
-#define HW_ADC_EXT_PIN			5
-#define HW_ADC_EXT2_GPIO		GPIOA
-#define HW_ADC_EXT2_PIN			6
-// fixme
-// //new
-// #define HW_ADC_EXT_GPIO			GPIOA // throttle
-// #define HW_ADC_EXT_PIN			4
-// #define HW_ADC_EXT2_GPIO		GPIOA  // regen
-// #define HW_ADC_EXT2_PIN			5
+// Double samples in beginning and end for positive current measurement.
+// Useful when the shunt sense traces have noise that causes offset.
+#ifndef CURR1_DOUBLE_SAMPLE
+#define CURR1_DOUBLE_SAMPLE		0
+#endif
+#ifndef CURR2_DOUBLE_SAMPLE
+#define CURR2_DOUBLE_SAMPLE		0
+#endif
+#ifndef CURR3_DOUBLE_SAMPLE
+#define CURR3_DOUBLE_SAMPLE		0
+#endif
+
+
+// ADC GPIOs
+#define HW_ADC_EXT_GPIO			GPIOA  // throttle
+#define HW_ADC_EXT_PIN			4
+#define HW_ADC_EXT2_GPIO		GPIOA  // regen
+#define HW_ADC_EXT2_PIN			5
+// fixme -- check definitaions. pins now correctl.
+
+// add this functionality
+// #if defined(ADDITIONAL_CONTROL_PINS )
+// gdrv_vsense =  PB0 // pull from axiom
+// reverse_sw = PC4
+// cruise = PC13
 
 // UART Peripheral
-#define HW_UART_DEV				SD3
-#define HW_UART_GPIO_AF			GPIO_AF_USART3
+#define HW_UART_DEV				SD1
+#define HW_UART_GPIO_AF			GPIO_AF_USART1
 #define HW_UART_TX_PORT			GPIOB
-#define HW_UART_TX_PIN			10
+#define HW_UART_TX_PIN			6
 #define HW_UART_RX_PORT			GPIOB
-#define HW_UART_RX_PIN			11
-// fixme
-// //new
-// #define HW_UART_TX_PORT			GPIOB
-// #define HW_UART_TX_PIN			6
-// #define HW_UART_RX_PORT			GPIOB
-// #define HW_UART_RX_PIN			7
+#define HW_UART_RX_PIN			7
+// checked
 
 // Permanent UART Peripheral (for NRF52)
 #define HW_UART_P_BAUD			115200
@@ -186,15 +233,15 @@
 
 
 // ICU Peripheral for servo decoding
-#define HW_USE_SERVO_TIM4
-#define HW_ICU_TIMER			TIM4
-#define HW_ICU_TIM_CLK_EN()		RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE)
-#define HW_ICU_DEV				ICUD4
-#define HW_ICU_CHANNEL			ICU_CHANNEL_1
-#define HW_ICU_GPIO_AF			GPIO_AF_TIM4
-#define HW_ICU_GPIO				GPIOB
-#define HW_ICU_PIN				6
-// fixme
+#define HW_USE_SERVO_TIM5
+#define HW_ICU_TIMER			TIM5
+#define HW_ICU_TIM_CLK_EN()		RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE)
+#define HW_ICU_DEV				ICUD5
+#define HW_ICU_CHANNEL			ICU_CHANNEL_2 // may have to add some extra definitions here, ch4
+#define HW_ICU_GPIO_AF			GPIO_AF_TIM5
+#define HW_ICU_GPIO				GPIOA
+#define HW_ICU_PIN				3
+// fixme - on PA3, tim5 ch4
 
 // I2C Peripheral
 #define HW_I2C_DEV				I2CD2
@@ -224,7 +271,7 @@
 #define HW_ENC_TIM_ISR_VEC		TIM3_IRQHandler
 // checked
 
-// SPI pins
+// SPI pins - not used.
 #define HW_SPI_DEV				SPID1
 #define HW_SPI_GPIO_AF			GPIO_AF_SPI1
 #define HW_SPI_PORT_NSS			GPIOA
