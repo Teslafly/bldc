@@ -167,6 +167,13 @@
 
 //#define HW_SOURCE "hw_100_500.c"
 //#define HW_HEADER "hw_100_500.h"
+
+// #define HW_SOURCE "hw_warrior6.c"
+// #define HW_HEADER "hw_warrior6.h"
+
+// #define HW_SOURCE "hw_r7_drvless.c"
+// #define HW_HEADER "hw_r7_drvless.h"
+
 #endif
 
 #ifndef HW_SOURCE
