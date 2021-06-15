@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
 
-#ifndef HW_R7
-#define HW_R7
+#ifndef HW_ZESC_R7
+#define HW_ZESC_R7
 
 /*
 * For ZESC Raiden7 ESC
@@ -27,7 +27,7 @@
 */
 
 
-#define HW_NAME					"Raiden7"
+#define HW_NAME					"ZESC_Raiden7"
 #define INVERTED_SHUNT_POLARITY				
 
 // HW properties
@@ -263,4 +263,4 @@
 #define HW_LIM_DUTY_MAX			0.0, 0.95
 #define HW_LIM_TEMP_FET			-40.0, 120.0
 
-#endif /* HW_R7 */
+#endif /* HW_ZESC_R7 */

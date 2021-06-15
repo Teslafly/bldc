@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
 
-#ifndef HW_W6
-#define HW_W6
+#ifndef HW_ZESC_W6
+#define HW_ZESC_W6
 
 /*
 * For ZESC Warrior6 ESC
@@ -26,7 +26,7 @@
 *
 */
 
-#define HW_NAME					"Warrior-6"
+#define HW_NAME					"ZESC_Warrior-6"
 #define INVERTED_SHUNT_POLARITY				
 
 // HW properties
