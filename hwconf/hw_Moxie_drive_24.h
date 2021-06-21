@@ -33,9 +33,17 @@
 // adds specific pins for cruise/brake/reverse instead of repurposing.
 // the interface pins are otherwise unaffected.
 #define ADDITIONAL_CONTROL_PINS 
+// #define INVERTED_BOTTOM_FET_DRIVER
 
 // #define ENABLE_SHUTDOWN_SWITCH           
 
+
+//configure inverted phases:
+// TIM_OCNPolarity_High = low  -> leg off, high -> leg on, (default)
+// TIM_OCNPolarity_Low = high -> leg off, low  -> leg on (inverted output)
+
+//#define INVERTED_TOP_FET_DRIVER   // uncomment to invert top (vbat) side fet signal
+#define INVERTED_BOTTOM_FET_DRIVER // uncomment to invert bottom(gnd) side fet signal
 
 // todo:
 // - fix adc mappings, mainly swap current and voltage inputs
