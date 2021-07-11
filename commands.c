@@ -49,6 +49,7 @@
 #include "mempools.h"
 #include "bms.h"
 #include "qmlui.h"
+#include "crc.h"
 
 #include <math.h>
 #include <string.h>
@@ -426,6 +427,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		if (mask & ((uint32_t)1 << 20)) {
 			buffer_append_float32(send_buffer, mc_interface_read_reset_avg_vq(), 1e3, &ind);
 		}
+		if (mask & ((uint32_t)1 << 21)) {
+			uint8_t status = 0;
+			status |= timeout_has_timeout();
+			status |= timeout_kill_sw_active() << 1;
+			send_buffer[ind++] = status;
+		}
 
 		reply_func(send_buffer, ind);
 		chMtxUnlock(&send_buffer_mutex);
@@ -565,7 +572,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			conf_general_store_app_configuration(appconf);
 			app_set_configuration(appconf);
-			timeout_configure(appconf->timeout_msec, appconf->timeout_brake_current);
+			timeout_configure(appconf->timeout_msec, appconf->timeout_brake_current, appconf->kill_sw_mode);
 			chThdSleepMilliseconds(200);
 
 			int32_t ind = 0;
@@ -662,11 +669,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		buffer_append_int32(send_buffer, (int32_t)(app_balance_get_roll_angle() * 1000000.0), &ind);
 		buffer_append_uint32(send_buffer, app_balance_get_diff_time(), &ind);
 		buffer_append_int32(send_buffer, (int32_t)(app_balance_get_motor_current() * 1000000.0), &ind);
-		buffer_append_int32(send_buffer, (int32_t)(app_balance_get_motor_position() * 1000000.0), &ind);
+		buffer_append_int32(send_buffer, (int32_t)(app_balance_get_debug1() * 1000000.0), &ind);
 		buffer_append_uint16(send_buffer, app_balance_get_state(), &ind);
 		buffer_append_uint16(send_buffer, app_balance_get_switch_state(), &ind);
 		buffer_append_int32(send_buffer, (int32_t)(app_balance_get_adc1() * 1000000.0), &ind);
 		buffer_append_int32(send_buffer, (int32_t)(app_balance_get_adc2() * 1000000.0), &ind);
+		buffer_append_int32(send_buffer, (int32_t)(app_balance_get_debug2() * 1000000.0), &ind);
 		reply_func(send_buffer, ind);
 	} break;
 
@@ -1029,7 +1037,14 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 	} break;
 
 	case COMM_EXT_NRF_ESB_RX_DATA: {
-		nrf_driver_process_packet(data, len);
+		if (len > 2) {
+			unsigned short crc = crc16((unsigned char*)data, len - 2);
+
+			if (crc	== ((unsigned short) data[len - 2] << 8 |
+					(unsigned short) data[len - 1])) {
+				nrf_driver_process_packet(data, len);
+			}
+		}
 	} break;
 
 	case COMM_APP_DISABLE_OUTPUT: {
@@ -1119,6 +1134,16 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		}
 		if (mask & ((uint32_t)1 << 15)) {
 			buffer_append_float32_auto(send_buffer, q[3], &ind);
+		}
+
+		if (mask & ((uint32_t)1 << 16)) {
+			uint8_t current_controller_id = app_get_configuration()->controller_id;
+#ifdef HW_HAS_DUAL_MOTORS
+			if (mc_interface_get_motor_thread() == 2) {
+				current_controller_id = utils_second_motor_id();
+			}
+#endif
+			send_buffer[ind++] = current_controller_id;
 		}
 
 		reply_func(send_buffer, ind);

@@ -1482,8 +1482,9 @@ void mcpwm_foc_encoder_detect(float current, bool print, float *offset, float *r
 	// Disable timeout
 	systime_t tout = timeout_get_timeout_msec();
 	float tout_c = timeout_get_brake_current();
+	KILL_SW_MODE tout_ksw = timeout_get_kill_sw_mode();
 	timeout_reset();
-	timeout_configure(600000, 0.0);
+	timeout_configure(60000, 0.0, KILL_SW_MODE_DISABLED);
 
 	// Save configuration
 	float offset_old = motor->m_conf->foc_encoder_offset;
@@ -1683,7 +1684,7 @@ void mcpwm_foc_encoder_detect(float current, bool print, float *offset, float *r
 	motor->m_conf->foc_motor_ld_lq_diff = ldiff_old;
 
 	// Enable timeout
-	timeout_configure(tout, tout_c);
+	timeout_configure(tout, tout_c, tout_ksw);
 
 	mc_interface_unlock();
 }
@@ -1720,8 +1721,9 @@ float mcpwm_foc_measure_resistance(float current, int samples, bool stop_after) 
 	// Disable timeout
 	systime_t tout = timeout_get_timeout_msec();
 	float tout_c = timeout_get_brake_current();
+	KILL_SW_MODE tout_ksw = timeout_get_kill_sw_mode();
 	timeout_reset();
-	timeout_configure(60000, 0.0);
+	timeout_configure(60000, 0.0, KILL_SW_MODE_DISABLED);
 
 	// Ramp up the current slowly
 	while (fabsf(motor->m_iq_set - current) > 0.001) {
@@ -1754,7 +1756,7 @@ float mcpwm_foc_measure_resistance(float current, int samples, bool stop_after) 
 			motor->m_state = MC_STATE_OFF;
 			stop_pwm_hw(motor);
 
-			timeout_configure(tout, tout_c);
+			timeout_configure(tout, tout_c, tout_ksw);
 			mc_interface_unlock();
 
 			return 0.0;
@@ -1775,7 +1777,7 @@ float mcpwm_foc_measure_resistance(float current, int samples, bool stop_after) 
 	}
 
 	// Enable timeout
-	timeout_configure(tout, tout_c);
+	timeout_configure(tout, tout_c, tout_ksw);
 	mc_interface_unlock();
 
 	return (voltage_avg / current_avg) * (2.0 / 3.0);
@@ -2035,8 +2037,9 @@ bool mcpwm_foc_hall_detect(float current, uint8_t *hall_table) {
 	// Disable timeout
 	systime_t tout = timeout_get_timeout_msec();
 	float tout_c = timeout_get_brake_current();
+	KILL_SW_MODE tout_ksw = timeout_get_kill_sw_mode();
 	timeout_reset();
-	timeout_configure(60000, 0.0);
+	timeout_configure(60000, 0.0, KILL_SW_MODE_DISABLED);
 
 	// Lock the motor
 	motor->m_phase_now_override = 0;
@@ -2093,7 +2096,7 @@ bool mcpwm_foc_hall_detect(float current, uint8_t *hall_table) {
 	motor->m_conf->foc_motor_ld_lq_diff = ldiff_old;
 
 	// Enable timeout
-	timeout_configure(tout, tout_c);
+	timeout_configure(tout, tout_c, tout_ksw);
 
 	int fails = 0;
 	for(int i = 0;i < 8;i++) {
@@ -2143,8 +2146,9 @@ int mcpwm_foc_dc_cal(bool cal_undriven) {
 	// Disable timeout
 	systime_t tout = timeout_get_timeout_msec();
 	float tout_c = timeout_get_brake_current();
+	KILL_SW_MODE tout_ksw = timeout_get_kill_sw_mode();
 	timeout_reset();
-	timeout_configure(600000, 0.0);
+	timeout_configure(60000, 0.0, KILL_SW_MODE_DISABLED);
 
 	// Measure driven offsets
 
@@ -2326,7 +2330,7 @@ int mcpwm_foc_dc_cal(bool cal_undriven) {
 	// TODO: Make sure that offsets are no more than e.g. 5%, as larger values indicate hardware problems.
 
 	// Enable timeout
-	timeout_configure(tout, tout_c);
+	timeout_configure(tout, tout_c, tout_ksw);
 	mc_interface_unlock();
 
 	m_dccal_done = true;

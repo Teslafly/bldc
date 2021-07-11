@@ -38,6 +38,7 @@
 #include "mempools.h"
 #include "crc.h"
 #include "bms.h"
+#include "events.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -589,6 +590,8 @@ void mc_interface_set_duty(float dutyCycle) {
 	default:
 		break;
 	}
+
+	events_add("set_duty", dutyCycle);
 }
 
 void mc_interface_set_duty_noramp(float dutyCycle) {
@@ -613,6 +616,8 @@ void mc_interface_set_duty_noramp(float dutyCycle) {
 	default:
 		break;
 	}
+
+	events_add("set_duty_noramp", dutyCycle);
 }
 
 void mc_interface_set_pid_speed(float rpm) {
@@ -637,6 +642,8 @@ void mc_interface_set_pid_speed(float rpm) {
 	default:
 		break;
 	}
+
+	events_add("set_pid_speed", rpm);
 }
 
 void mc_interface_set_pid_pos(float pos) {
@@ -664,6 +671,8 @@ void mc_interface_set_pid_pos(float pos) {
 	default:
 		break;
 	}
+
+	events_add("set_pid_pos", pos);
 }
 
 void mc_interface_set_current(float current) {
@@ -688,6 +697,8 @@ void mc_interface_set_current(float current) {
 	default:
 		break;
 	}
+
+	events_add("set_current", current);
 }
 
 void mc_interface_set_brake_current(float current) {
@@ -717,6 +728,8 @@ void mc_interface_set_brake_current(float current) {
 	default:
 		break;
 	}
+
+	events_add("set_current_brake", current);
 }
 
 /**
@@ -776,6 +789,8 @@ void mc_interface_set_handbrake(float current) {
 	default:
 		break;
 	}
+
+	events_add("set_handbrake", current);
 }
 
 /**
@@ -803,6 +818,24 @@ void mc_interface_brake_now(void) {
  */
 void mc_interface_release_motor(void) {
 	mc_interface_set_current(0.0);
+}
+
+void mc_interface_release_motor_override(void) {
+	switch (motor_now()->m_conf.motor_type) {
+	case MOTOR_TYPE_BLDC:
+	case MOTOR_TYPE_DC:
+		mcpwm_set_current(0.0);
+		break;
+
+	case MOTOR_TYPE_FOC:
+		mcpwm_foc_set_current(0.0);
+		break;
+
+	default:
+		break;
+	}
+
+	events_add("release_motor_override", 0.0);
 }
 
 bool mc_interface_wait_for_motor_release(float timeout) {
@@ -2287,6 +2320,22 @@ static void run_timer_tasks(volatile motor_if_state_t *motor) {
 
 	case OUT_AUX_MODE_ON_AFTER_10S:
 		if (chVTGetSystemTimeX() >= MS2ST(10000)) {
+			AUX_ON();
+		}
+		break;
+
+	case OUT_AUX_MODE_ON_WHEN_RUNNING:
+		if (mc_interface_get_state() == MC_STATE_RUNNING) {
+			AUX_ON();
+		} else {
+			AUX_OFF();
+		}
+		break;
+
+	case OUT_AUX_MODE_ON_WHEN_NOT_RUNNING:
+		if (mc_interface_get_state() == MC_STATE_RUNNING) {
+			AUX_OFF();
+		} else {
 			AUX_ON();
 		}
 		break;

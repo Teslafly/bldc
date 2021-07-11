@@ -160,6 +160,7 @@ CSRC = $(STARTUPSRC) \
        mempools.c \
        worker.c \
        bms.c \
+       events.c \
        $(HWSRC) \
        $(APPSRC) \
        $(NRFSRC) \
@@ -214,6 +215,10 @@ INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          qmlui \
          qmlui/hw \
          qmlui/app
+
+ifdef app_custom_mkfile
+include $(app_custom_mkfile)
+endif
 
 #
 # Project, sources and paths

@@ -53,6 +53,7 @@
 #endif
 #include "shutdown.h"
 #include "mempools.h"
+#include "events.h"
 
 /*
  * HW resources used:
@@ -205,6 +206,7 @@ int main(void) {
 
 	chThdSleepMilliseconds(100);
 
+	events_init();
 	hw_init_gpio();
 	LED_RED_OFF();
 	LED_GREEN_OFF();
@@ -264,7 +266,7 @@ int main(void) {
 	chThdCreateStatic(flash_integrity_check_thread_wa, sizeof(flash_integrity_check_thread_wa), LOWPRIO, flash_integrity_check_thread, NULL);
 
 	timeout_init();
-	timeout_configure(appconf->timeout_msec, appconf->timeout_brake_current);
+	timeout_configure(appconf->timeout_msec, appconf->timeout_brake_current, appconf->kill_sw_mode);
 
 	mempools_free_appconf(appconf);
 

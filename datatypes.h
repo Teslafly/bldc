@@ -69,7 +69,9 @@ typedef enum {
 	OUT_AUX_MODE_ON_AFTER_2S,
 	OUT_AUX_MODE_ON_AFTER_5S,
 	OUT_AUX_MODE_ON_AFTER_10S,
-	OUT_AUX_MODE_UNUSED
+	OUT_AUX_MODE_UNUSED,
+	OUT_AUX_MODE_ON_WHEN_RUNNING,
+	OUT_AUX_MODE_ON_WHEN_NOT_RUNNING,
 } out_aux_mode;
 
 // Temperature sensor type
@@ -677,6 +679,7 @@ typedef struct {
 	float ki;
 	float kd;
 	uint16_t hertz;
+	uint16_t loop_time_filter;
 	float fault_pitch;
 	float fault_roll;
 	float fault_duty;
@@ -695,6 +698,8 @@ typedef struct {
 	float tiltback_low_voltage;
 	float tiltback_constant;
 	uint16_t tiltback_constant_erpm;
+	float tiltback_variable;
+	float tiltback_variable_max;
 	float startup_pitch_tolerance;
 	float startup_roll_tolerance;
 	float startup_speed;
@@ -706,15 +711,19 @@ typedef struct {
 	float roll_steer_kp;
 	float roll_steer_erpm_kp;
 	float brake_current;
+	uint16_t brake_timeout;
 	float yaw_current_clamp;
 	uint16_t kd_pt1_lowpass_frequency;
 	uint16_t kd_pt1_highpass_frequency;
+	float kd_biquad_lowpass;
+	float kd_biquad_highpass;
 	float booster_angle;
 	float booster_ramp;
 	float booster_current;
 	float torquetilt_start_current;
 	float torquetilt_angle_limit;
-	float torquetilt_speed;
+	float torquetilt_on_speed;
+	float torquetilt_off_speed;
 	float torquetilt_strength;
 	float torquetilt_filter;
 	float turntilt_strength;
@@ -792,6 +801,14 @@ typedef enum {
 	UAVCAN_RAW_MODE_DUTY
 } UAVCAN_RAW_MODE;
 
+typedef enum {
+	KILL_SW_MODE_DISABLED = 0,
+	KILL_SW_MODE_PPM_LOW,
+	KILL_SW_MODE_PPM_HIGH,
+	KILL_SW_MODE_ADC2_LOW,
+	KILL_SW_MODE_ADC2_HIGH
+} KILL_SW_MODE;
+
 typedef struct {
 	// Settings
 	uint8_t controller_id;
@@ -804,6 +821,7 @@ typedef struct {
 	bool permanent_uart_enabled;
 	SHUTDOWN_MODE shutdown_mode;
 	bool servo_out_enable;
+	KILL_SW_MODE kill_sw_mode;
 
 	// CAN modes
 	CAN_MODE can_mode;
@@ -1039,6 +1057,7 @@ typedef enum {
 	CAN_PACKET_BMS_HW_DATA_5,
 	CAN_PACKET_BMS_AH_WH_CHG_TOTAL,
 	CAN_PACKET_BMS_AH_WH_DIS_TOTAL,
+	CAN_PACKET_MAKE_ENUM_32_BITS = 0xFFFFFFFF
 } CAN_PACKET_ID;
 
 // Logged fault data
