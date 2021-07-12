@@ -7,3 +7,4 @@ build
 .settings/language.settings.xml
 .DS_Store
 workspace.code-workspace
+.vscode
