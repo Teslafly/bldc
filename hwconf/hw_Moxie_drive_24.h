@@ -45,6 +45,7 @@
 //#define INVERTED_TOP_FET_DRIVER   // uncomment to invert top (vbat) side fet signal
 #define INVERTED_BOTTOM_FET_DRIVER // uncomment to invert bottom(gnd) side fet signal
 
+
 // todo:
 // - fix adc mappings, mainly swap current and voltage inputs
 // - add rev/brake sw pin mappings
@@ -105,19 +106,6 @@
 // pwm phase out pins checked
 
 /*
-non volt/curtrent adc channels
-// vbus
-// GDRV VSENSE
-// fet temp
-// motor temp
-
-// ext1 / throttle
-// ext2 / regen
-// ext3 / cruise sw
-
-*/
-
-/*
  * ADC Vector moxie24
  *  all in#/names correct. apply to correct index
  *
@@ -142,6 +130,7 @@ non volt/curtrent adc channels
  * 14 (X):	IN11	SENS2
  * 17 (X):  IN13	SENS3
  */
+// checked
 
 #define HW_ADC_CHANNELS			15
 #define HW_ADC_INJ_CHANNELS		3
@@ -164,6 +153,12 @@ non volt/curtrent adc channels
 #define ADC_IND_TEMP_MOTOR		10
 #define ADC_IND_VREFINT			11
 #define ADC_IND_VOUT_GATE_DRV	12
+// checked
+
+
+// Override dead time. See the stm32f4 reference manual for calculating this value.
+// measure this on moxxie drive!
+#define HW_DEAD_TIME_NSEC		660.0
 
 
 // ADC macros and settings
@@ -179,21 +174,32 @@ non volt/curtrent adc channels
 #define VIN_R2					2200.0
 #endif
 #ifndef CURRENT_AMP_GAIN
-#define CURRENT_AMP_GAIN		0.0 // fix
+// #define CURRENT_AMP_GAIN		0.020 // fix.  this changed with 150a sensors? hall vout/amp
+#define CURRENT_AMP_GAIN		1.0
 #endif
 #ifndef CURRENT_SHUNT_RES
 #define CURRENT_SHUNT_RES		1 // hall sensor
 #endif
 
+// #define hall_current_gain         (20 / 1000) // volts/amp, acs758, 100a bidirectional
+// #define hall_current_gain         (13.33 / 1000)  // volts/amp, acs758, 150a bidirectional
+// at 3.3v, this gives ~124A full scale.
+
+
+
+// #define FAC_CURRENT					((V_REG / 4095.0) / (hall_current_gain))
+// #define FAC_CURRENT					((V_REG / 4095.0) / (CURRENT_SHUNT_RES * CURRENT_AMP_GAIN))
+
 // Input voltage
-// #define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * ((VIN_R1 + VIN_R2) / VIN_R2))
-#define GET_INPUT_VOLTAGE()	 24
+#define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * ((VIN_R1 + VIN_R2) / VIN_R2))
+// #define GET_INPUT_VOLTAGE()	 24
 
 
 // NTC Termistors
+#define NTC_TEMP_MOS_BETA 3380.0   // 
 #define NTC_RES(adc_val)		((4095.0 * 10000.0) / adc_val - 10000.0)
-// #define NTC_TEMP(adc_ind)		(1.0 / ((logf(NTC_RES(ADC_Value[adc_ind]) / 10000.0) / 3434.0) + (1.0 / 298.15)) - 273.15)
-#define NTC_TEMP(adc_ind)		35 // testing
+#define NTC_TEMP(adc_ind)		(1.0 / ((logf(NTC_RES(ADC_Value[adc_ind]) / 10000.0) / NTC_TEMP_MOS_BETA) + (1.0 / 298.15)) - 273.15)
+// #define NTC_TEMP(adc_ind)		35 // testing
 
 #define NTC_RES_MOTOR(adc_val)	(10000.0 / ((4095.0 / (float)adc_val) - 1.0)) // Motor temp sensor on low side
 #define NTC_TEMP_MOTOR(beta)	(1.0 / ((logf(NTC_RES_MOTOR(ADC_Value[ADC_IND_TEMP_MOTOR]) / 10000.0) / beta) + (1.0 / 298.15)) - 273.15)
@@ -201,6 +207,11 @@ non volt/curtrent adc channels
 
 // Voltage on ADC channel
 #define ADC_VOLTS(ch)			((float)ADC_Value[ch] / 4096.0 * V_REG)
+
+// Gate driver power supply output voltage
+#define GET_GATE_DRIVER_SUPPLY_VOLTAGE()	((float)ADC_VOLTS(ADC_IND_VOUT_GATE_DRV) * 11.0)
+
+// #define ANGLE_TO_DAC_VALUE(angle)		( angle * 512.0 + 0x800 )//angle between -pi to pi
 
 // Double samples in beginning and end for positive current measurement.
 // Useful when the shunt sense traces have noise that causes offset.
@@ -214,6 +225,8 @@ non volt/curtrent adc channels
 #define CURR3_DOUBLE_SAMPLE		0
 #endif
 
+// Execute FOC loop once every "FOC_CONTROL_LOOP_FREQ_DIVIDER" ADC ISR calls
+#define FOC_CONTROL_LOOP_FREQ_DIVIDER	1
 
 // ADC GPIOs
 // these pins are also capable of dac out.
@@ -319,13 +332,13 @@ non volt/curtrent adc channels
 #define READ_HALL2()			palReadPad(HW_HALL_ENC_GPIO2, HW_HALL_ENC_PIN2)
 #define READ_HALL3()			palReadPad(HW_HALL_ENC_GPIO3, HW_HALL_ENC_PIN3)
 
-// Override dead time. See the stm32f4 reference manual for calculating this value.
-// measure this on moxxie drive!
-#define HW_DEAD_TIME_NSEC		660.0
+
+#define HW_GATE_DRIVER_SUPPLY_MAX_VOLTAGE	13.0
+#define HW_GATE_DRIVER_SUPPLY_MIN_VOLTAGE	10.0
 
 // Default setting overrides
 #ifndef MCCONF_L_MIN_VOLTAGE
-#define MCCONF_L_MIN_VOLTAGE			11.0		// Minimum input voltage
+#define MCCONF_L_MIN_VOLTAGE			17.0		// Minimum input voltage
 #endif
 #ifndef MCCONF_L_MAX_VOLTAGE
 #define MCCONF_L_MAX_VOLTAGE			70.0		// Maximum input voltage
@@ -349,17 +362,24 @@ non volt/curtrent adc channels
 #define MCCONF_L_IN_CURRENT_MIN			-50.0	// Input current limit in Amperes (Lower)
 #endif
 
+#define APPCONF_APP_TO_USE	        APP_ADC_UART
+
+#define LED_EXT_BATT_LOW			46.0
+#define LED_EXT_BATT_HIGH			52.0
+
 // Setting limits
 #define HW_LIM_CURRENT			-100.0, 100.0
-#define HW_LIM_CURRENT_IN		-100.0, 100.0
+#define HW_LIM_CURRENT_IN		-60.0, 60.0
 #define HW_LIM_CURRENT_ABS		0.0, 150.0
-#define HW_LIM_VIN				11.0, 70.0
+#define HW_LIM_VIN				18.0, 70.0
 #define HW_LIM_ERPM				-100e3, 100e3
 #define HW_LIM_DUTY_MIN			0.0, 0.1
 #define HW_LIM_DUTY_MAX			0.0, 0.99
-#define HW_LIM_TEMP_FET			-40.0, 90.0
+#define HW_LIM_TEMP_FET			-40.0, 80.0
 
 // HW-specific functions
-// float hw100_500_get_temp(void);
+// void hw_DAC1_setdata(uint16_t data);
+// void hw_DAC2_setdata(uint16_t data);
 
-#endif /* HW_100_500_H_ */
+
+#endif /* HW_MOXIE_DRIVE_24_H_ */

@@ -88,18 +88,24 @@ void hw_init_gpio(void) {
 			PAL_MODE_OUTPUT_PUSHPULL |
 			PAL_STM32_OSPEED_HIGHEST);
 
+#ifdef HW_USE_DAC
+	// hw_setup_dac();
+#else
+	palSetPadMode(GPIOA, 4, PAL_MODE_INPUT_ANALOG); // ext1 / throttle
+	palSetPadMode(GPIOA, 5, PAL_MODE_INPUT_ANALOG); // ext2 / regen
+#endif
+
 	// ADC Pins
 	palSetPadMode(GPIOA, 0, PAL_MODE_INPUT_ANALOG); // current 1
 	palSetPadMode(GPIOA, 1, PAL_MODE_INPUT_ANALOG); // current 2
 	palSetPadMode(GPIOA, 2, PAL_MODE_INPUT_ANALOG); // current 3
-	// palSetPadMode(GPIOA, 3, PAL_MODE_INPUT_ANALOG); // servo conn
-	palSetPadMode(GPIOA, 4, PAL_MODE_INPUT_ANALOG); // ext1 / throttle
-	palSetPadMode(GPIOA, 5, PAL_MODE_INPUT_ANALOG); // ext2 / regen
+	palSetPadMode(GPIOA, 3, PAL_MODE_INPUT_ANALOG); // servo conn / ext3
+
 	// palSetPadMode(GPIOA, 6, PAL_MODE_INPUT_ANALOG); // pwm out
 
 	palSetPadMode(GPIOB, 0, PAL_MODE_INPUT_ANALOG);  // GDRV VSENSE
 	palSetPadMode(GPIOB, 1, PAL_MODE_INPUT_ANALOG);  // fet temp
-	// palSetPadMode(GPIOB, 5, PAL_MODE_INPUT_ANALOG);  // ext3
+	palSetPadMode(GPIOB, 5, PAL_MODE_INPUT_ANALOG);  // ext3
 
 	palSetPadMode(GPIOC, 0, PAL_MODE_INPUT_ANALOG); // volt 1
 	palSetPadMode(GPIOC, 1, PAL_MODE_INPUT_ANALOG); // volt 2
@@ -147,7 +153,7 @@ void hw_setup_adc_channels(void) {
 	ADC_RegularChannelConfig(ADC3, ADC_Channel_12, 1, ADC_SampleTime_15Cycles);	// [2] SENS3
 	ADC_RegularChannelConfig(ADC3, ADC_Channel_2, 2, ADC_SampleTime_15Cycles);	// [5] CURR3
 	ADC_RegularChannelConfig(ADC3, ADC_Channel_13, 3, ADC_SampleTime_15Cycles);	// [8] AN_IN 
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_Vrefint, 4, ADC_SampleTime_15Cycles);// [11] vrefint
+	ADC_RegularChannelConfig(ADC3, ADC_Channel_Vrefint, 4, ADC_SampleTime_15Cycles);// [11] vrefint
 	ADC_RegularChannelConfig(ADC3, ADC_Channel_2, 5, ADC_SampleTime_15Cycles);	// [14] unused
 	// ADC_RegularChannelConfig(ADC3, ADC_Channel_2, 6, ADC_SampleTime_15Cycles); // [17] unused
 
