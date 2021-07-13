@@ -6,6 +6,7 @@ APPSRC =	applications/app.c \
 			applications/app_nunchuk.c \
 			applications/app_balance.c \
 			applications/app_pas.c \
-			applications/app_custom.c
+			applications/app_gearbox_servo.c \
+			# applications/app_custom.c
 
 APPINC = applications
