@@ -74,6 +74,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 COPYDIR=60
 rm -f $COPYDIR/*
+mkdir -p "$COPYDIR"
 
 # default
 cd $FWPATH
@@ -89,15 +90,12 @@ cp $FWPATH/build/BLDC_4_ChibiOS.bin $COPYDIR/VESC_default.bin
 # cd $DIR
 # cp $FWPATH/build/BLDC_4_ChibiOS.bin $COPYDIR/VESC_default_no_hw_limits.bin
 
-# # Clean
-# cd "$FWPATH"
-# make clean
-# cd "$DIR"
 
 #################### HW 60_MK3 ########################
 
 COPYDIR=60_MK3
 rm -f $COPYDIR/*
+mkdir -p "$COPYDIR"
 
 # default
 cd "$FWPATH"
@@ -113,15 +111,12 @@ make -j8 build_args='-DDISABLE_HW_LIMITS -DHW_SOURCE=\"hw_60.c\" -DHW_HEADER=\"h
 cd $DIR
 cp $FWPATH/build/BLDC_4_ChibiOS.bin $COPYDIR/VESC_default_no_hw_limits.bin
 
-# # Clean
-# cd "$FWPATH"
-# make clean
-# cd "$DIR"
 
 #################### HW 60_MK4 ########################
 
 COPYDIR=60_MK4
 rm -f $COPYDIR/*
+mkdir -p "$COPYDIR"
 
 # default
 cd "$FWPATH"
@@ -137,15 +132,12 @@ make -j8 build_args='-DDISABLE_HW_LIMITS -DHW_SOURCE=\"hw_60.c\" -DHW_HEADER=\"h
 cd $DIR
 cp $FWPATH/build/BLDC_4_ChibiOS.bin $COPYDIR/VESC_default_no_hw_limits.bin
 
-# # Clean
-# cd "$FWPATH"
-# make clean
-# cd "$DIR"
 
 #################### HW 60_MK5 ########################
 
 COPYDIR=60_MK5
 rm -f $COPYDIR/*
+mkdir -p "$COPYDIR"
 
 # default
 cd $FWPATH
@@ -166,6 +158,7 @@ cp $FWPATH/build/BLDC_4_ChibiOS.bin $COPYDIR/VESC_default_no_hw_limits.bin
 
 # COPYDIR=DAS_RS
 # rm -f $COPYDIR/*
+
 
 # # default
 # cd $FWPATH
