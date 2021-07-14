@@ -2780,21 +2780,30 @@ void mcpwm_foc_adc_int_handler(void *p, uint32_t flags) {
 
 	utils_norm_angle(&angle_now);
 
-	if (conf_now->p_pid_ang_div > 0.98 && conf_now->p_pid_ang_div < 1.02) {
-		motor_now->m_pos_pid_now = angle_now;
-	} else {
-		if (angle_now < 90.0 && motor_now->m_pid_div_angle_last > 270.0) {
-			motor_now->m_pid_div_angle_accumulator += 360.0 / conf_now->p_pid_ang_div;
-			utils_norm_angle((float*)&motor_now->m_pid_div_angle_accumulator);
-		} else if (angle_now > 270.0 && motor_now->m_pid_div_angle_last < 90.0) {
-			motor_now->m_pid_div_angle_accumulator -= 360.0 / conf_now->p_pid_ang_div;
-			utils_norm_angle((float*)&motor_now->m_pid_div_angle_accumulator);
-		}
+	// if (conf_now->p_pid_ang_div > 0.98 && conf_now->p_pid_ang_div < 1.02) {
+	// 	motor_now->m_pos_pid_now = angle_now;
+	// } else {
+	// 	if (angle_now < 90.0 && motor_now->m_pid_div_angle_last > 270.0) {
+	// 		motor_now->m_pid_div_angle_accumulator += 360.0 / conf_now->p_pid_ang_div;
+	// 		utils_norm_angle((float*)&motor_now->m_pid_div_angle_accumulator);
+	// 	} else if (angle_now > 270.0 && motor_now->m_pid_div_angle_last < 90.0) {
+	// 		motor_now->m_pid_div_angle_accumulator -= 360.0 / conf_now->p_pid_ang_div;
+	// 		utils_norm_angle((float*)&motor_now->m_pid_div_angle_accumulator);
+	// 	}
 
-		motor_now->m_pid_div_angle_last = angle_now;
+	// 	motor_now->m_pid_div_angle_last = angle_now;
 
-		motor_now->m_pos_pid_now = motor_now->m_pid_div_angle_accumulator + angle_now / conf_now->p_pid_ang_div;
-		utils_norm_angle((float*)&motor_now->m_pos_pid_now);
+	// 	motor_now->m_pos_pid_now = motor_now->m_pid_div_angle_accumulator + angle_now / conf_now->p_pid_ang_div;
+	// 	utils_norm_angle((float*)&motor_now->m_pos_pid_now);
+	// }
+
+	// angle now ranges from 0 to 360 degrees
+	// update if the motor made a revolution
+	if ((angle_now > 300) & (motor_now->m_pid_div_angle_last < 60)) {
+		motor_cumulative_revolutions -= 1;
+	}
+	if ((angle_now < 60) & (motor_now->m_pid_div_angle_last > 300)) {
+		motor_cumulative_revolutions += 1;
 	}
 	motor_now->m_pid_div_angle_last = angle_now; // save previous angle
 
@@ -2809,7 +2818,6 @@ void mcpwm_foc_adc_int_handler(void *p, uint32_t flags) {
 	if (motor_now->m_state == MC_STATE_RUNNING) {
 		run_pid_control_pos(motor_angle, motor_now->m_pos_pid_set, dt, motor_now);
 	}
-
 
 #ifdef AD2S1205_SAMPLE_GPIO
 	// Release sample in the AD2S1205 resolver IC.
