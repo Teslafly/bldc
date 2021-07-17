@@ -174,21 +174,18 @@
 #define VIN_R2					2200.0
 #endif
 #ifndef CURRENT_AMP_GAIN
-// #define CURRENT_AMP_GAIN		0.020 // fix.  this changed with 150a sensors? hall vout/amp
-#define CURRENT_AMP_GAIN		1.0
+// #define CURRENT_AMP_GAIN		0.020 
+// #define CURRENT_AMP_GAIN        (20 / 1000) // volts/amp, acs758, 100a bidirectional
+#define CURRENT_AMP_GAIN        (-13.33 / 1000)  // volts/amp, acs758, 150a bidirectional
+                                                // at 3.3v, this gives ~124A full scale.
 #endif
 #ifndef CURRENT_SHUNT_RES
-#define CURRENT_SHUNT_RES		1 // hall sensor
+#define CURRENT_SHUNT_RES		1 // hall effect current sensor
 #endif
 
 // #define hall_current_gain         (20 / 1000) // volts/amp, acs758, 100a bidirectional
 // #define hall_current_gain         (13.33 / 1000)  // volts/amp, acs758, 150a bidirectional
 // at 3.3v, this gives ~124A full scale.
-
-
-
-// #define FAC_CURRENT					((V_REG / 4095.0) / (hall_current_gain))
-// #define FAC_CURRENT					((V_REG / 4095.0) / (CURRENT_SHUNT_RES * CURRENT_AMP_GAIN))
 
 // Input voltage
 #define GET_INPUT_VOLTAGE()		((V_REG / 4095.0) * (float)ADC_Value[ADC_IND_VIN_SENS] * ((VIN_R1 + VIN_R2) / VIN_R2))

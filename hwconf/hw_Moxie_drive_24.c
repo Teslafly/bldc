@@ -35,6 +35,11 @@ static const I2CConfig i2cfg = {
 		STD_DUTY_CYCLE
 };
 
+// private functions
+void hw_setup_dac(void);
+void hw_axiom_configure_brownout(uint8_t);
+void hw_axiom_configure_VDD_undervoltage(void);
+
 void hw_init_gpio(void) {
 	// GPIO clock enable
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
@@ -167,6 +172,34 @@ void hw_setup_adc_channels(void) {
 	ADC_InjectedChannelConfig(ADC1, ADC_Channel_0, 3, ADC_SampleTime_15Cycles);  // CURR1
 	ADC_InjectedChannelConfig(ADC2, ADC_Channel_1, 3, ADC_SampleTime_15Cycles);  // CURR2
 	ADC_InjectedChannelConfig(ADC3, ADC_Channel_2, 3, ADC_SampleTime_15Cycles);  // CURR3
+	// checked
+}
+
+void hw_axiom_setup_dac(void) {
+	// GPIOA clock enable
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+
+	// DAC Periph clock enable
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_DAC, ENABLE);
+
+	// DAC channel 1 & 2 (DAC_OUT1 = PA.4)(DAC_OUT2 = PA.5) configuration
+	palSetPadMode(GPIOA, 4, PAL_MODE_INPUT_ANALOG);
+	palSetPadMode(GPIOA, 5, PAL_MODE_INPUT_ANALOG);
+
+	// Enable both DAC channels with output buffer disabled to achieve rail-to-rail output
+	DAC->CR |= DAC_CR_EN1 | DAC_CR_BOFF1 | DAC_CR_EN2 | DAC_CR_BOFF2;
+
+	// Set DAC channels at 1.65V
+	hw_axiom_DAC1_setdata(0x800);
+	hw_axiom_DAC2_setdata(0x800);
+}
+
+void hw_DAC1_setdata(uint16_t data) {
+	DAC->DHR12R1 = data;
+}
+
+void hw_DAC2_setdata(uint16_t data) {
+	DAC->DHR12R2 = data;
 }
 
 void hw_start_i2c(void) {
